@@ -1,0 +1,91 @@
+// AutoAuction — schema v1.0
+// 5 сущностей: User, Lot, WonLot, DeliveryRequest, EmailBatch
+//
+// Поддерживает и SQLite (для локальной разработки) и PostgreSQL (для Vercel/Neon).
+// Переключение происходит автоматически через env DATABASE_URL — см. .env.example.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // Prisma сам определяет provider по URL:
+  //   file:./db/custom.db → sqlite
+  //   postgres://...      → postgresql
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String // bcrypt hash
+  name      String?
+  email     String?
+  role      String   @default("CLIENT") // ADMIN | CLIENT
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lots         Lot[]
+  deliveryReqs DeliveryRequest[]
+}
+
+model Lot {
+  id           String   @id @default(cuid())
+  lotNumber    String
+  rawText      String?
+  auctionName  String   @default("")
+  carMake      String   @default("")
+  carModel     String?
+  auctionDate  String   @default("")
+  comment      String?
+  status       String   @default("PENDING") // PENDING | SENT | WON | PROCESSING
+  clientId     String
+  emailBatchId String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  client     User         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  emailBatch EmailBatch? @relation(fields: [emailBatchId], references: [id])
+  wonLot     WonLot?
+}
+
+model WonLot {
+  id        String   @id @default(cuid())
+  lotId     String   @unique
+  price     Float?
+  currency  String   @default("JPY")
+  status    String   @default("WON")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lot          Lot              @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  deliveryReqs DeliveryRequest[]
+}
+
+model DeliveryRequest {
+  id            String   @id @default(cuid())
+  wonLotId      String
+  clientId      String
+  method        String? // DUTY | DISASSEMBLY | CUT_REAR | CUT_FRONT | CUT_REAR_ARCS
+  ownerFullName String?
+  ownerAddress  String?
+  status        String   @default("PENDING")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  wonLot WonLot @relation(fields: [wonLotId], references: [id], onDelete: Cascade)
+  client User   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
+model EmailBatch {
+  id             String   @id @default(cuid())
+  subject        String
+  recipientEmail String
+  body           String
+  comment        String?
+  sentAt         DateTime @default(now())
+
+  lots Lot[]
+}
