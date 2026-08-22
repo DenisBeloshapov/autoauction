@@ -28,16 +28,46 @@ export async function POST(req: Request) {
     if (!username || !password) {
       return NextResponse.json({ error: 'Username and password are required' }, { status: 400 })
     }
+
+    console.log('[login] Attempt:', { username, hasPassword: !!password })
+
     const user = await db.user.findFirst({ where: { username, isActive: true } })
-    if (!user || !(await verifyPassword(password, user.password))) {
+    console.log('[login] User found:', user ? { id: user.id, username: user.username, role: user.role, passwordPrefix: user.password.substring(0, 7) } : 'NOT FOUND')
+
+    if (!user) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
     }
+
+    console.log('[login] Verifying password with bcrypt...')
+    const passwordOk = await verifyPassword(password, user.password)
+    console.log('[login] Password verify result:', passwordOk)
+
+    if (!passwordOk) {
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+    }
+
+    console.log('[login] Creating JWT token...')
     const token = createToken({ userId: user.id, role: user.role as 'ADMIN' | 'CLIENT' })
+    console.log('[login] Token created, length:', token.length)
+
     return NextResponse.json({
       token,
       user: { id: user.id, username: user.username, name: user.name, role: user.role, email: user.email },
     })
-  } catch {
-    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+  } catch (err) {
+    // Полный stack trace попадёт в Vercel Logs
+    console.error('[login] FATAL ERROR:', err)
+    const message = err instanceof Error ? err.message : String(err)
+    const stack = err instanceof Error ? err.stack : undefined
+    const name = err instanceof Error ? err.constructor.name : 'Unknown'
+    return NextResponse.json(
+      {
+        error: 'Server error',
+        detail: message,
+        errorName: name,
+        stack: stack?.split('\n').slice(0, 5).join('\n'),
+      },
+      { status: 500 }
+    )
   }
 }
