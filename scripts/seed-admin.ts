@@ -1,21 +1,8 @@
-/**
- * Seed script — creates admin + testclient users.
- *
- * Local dev:
- *   npm run db:seed
- *
- * Production (Vercel + Neon):
- *   npx tsx scripts/seed-admin.ts
- *   (run from your local machine with DATABASE_URL pointing to prod DB)
- *
- * Passwords are hashed with bcrypt (cost factor 12) — never stored in plain text.
- */
-import { PrismaClient } from '@prisma/client'
-import bcrypt from 'bcryptjs'
-
-const db = new PrismaClient()
+import { db } from '../src/lib/db'
+import { hashPassword } from '../src/lib/auth'
 
 async function main() {
+  // Clean slate
   await db.deliveryRequest.deleteMany()
   await db.wonLot.deleteMany()
   await db.emailBatch.deleteMany()
@@ -25,21 +12,24 @@ async function main() {
   const admin = await db.user.create({
     data: {
       username: 'admin',
-      password: await bcrypt.hash('admin123', 12),
+      password: hashPassword('admin123'),
       name: 'Administrator',
       role: 'ADMIN',
+      isActive: true,
     },
   })
 
   const client = await db.user.create({
     data: {
       username: 'testclient',
-      password: await bcrypt.hash('client123', 12),
+      password: hashPassword('client123'),
       name: 'Test Client',
       role: 'CLIENT',
+      isActive: true,
     },
   })
 
+  // Sample lots for the test client
   await db.lot.createMany({
     data: [
       {

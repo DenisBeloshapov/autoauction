@@ -13,6 +13,7 @@ const STYLES: Record<string, string> = {
   COMPLETED: "bg-gray-200 text-gray-700 border-gray-300",
 };
 
+// Statuses that visually "wait for action" — get a soft pulse
 const PULSING = new Set(["PENDING", "DELIVERY_REQUESTED"]);
 
 export function StatusBadge({
@@ -24,6 +25,7 @@ export function StatusBadge({
   status: string;
   label?: string;
   className?: string;
+  /** Force pulse on/off; defaults to true for PENDING / DELIVERY_REQUESTED */
   pulse?: boolean;
 }) {
   const style = STYLES[status] || "bg-gray-100 text-gray-700 border-gray-200";

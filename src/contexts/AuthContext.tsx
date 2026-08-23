@@ -29,12 +29,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  // Restore session on mount
   useEffect(() => {
     (async () => {
       const stored = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
-      if (!stored) { setLoading(false); return; }
+      if (!stored) {
+        setLoading(false);
+        return;
+      }
       try {
-        const res = await fetch("/api/auth/verify", { headers: { Authorization: `Bearer ${stored}` } });
+        const res = await fetch("/api/auth/verify", {
+          headers: { Authorization: `Bearer ${stored}` },
+        });
         if (res.ok) {
           const data = await res.json();
           setUser(data.user);
@@ -50,27 +56,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })();
   }, []);
 
-  const login = useCallback(async (username: string, password: string) => {
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        return { ok: false, error: data.error || "Login failed" };
+  const login = useCallback(
+    async (username: string, password: string) => {
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          return { ok: false, error: data.error || "Login failed" };
+        }
+        const data = await res.json();
+        localStorage.setItem("auth_token", data.token);
+        setToken(data.token);
+        setUser(data.user);
+        router.refresh();
+        return { ok: true };
+      } catch {
+        return { ok: false, error: "Network error" };
       }
-      const data = await res.json();
-      localStorage.setItem("auth_token", data.token);
-      setToken(data.token);
-      setUser(data.user);
-      router.refresh();
-      return { ok: true };
-    } catch {
-      return { ok: false, error: "Network error" };
-    }
-  }, [router]);
+    },
+    [router]
+  );
 
   const logout = useCallback(() => {
     localStorage.removeItem("auth_token");
@@ -79,7 +88,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.refresh();
   }, [router]);
 
-  return <AuthContext.Provider value={{ user, token, loading, login, logout }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

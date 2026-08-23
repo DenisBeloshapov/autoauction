@@ -1,67 +1,55 @@
-import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
+import { createHash } from 'crypto'
+
+const SALT = 'auction_salt_2024'
 
 export type Role = 'ADMIN' | 'CLIENT'
 
-export interface JwtPayload {
+export interface TokenPayload {
   userId: string
   role: Role
-  // issued-at (seconds)
-  iat?: number
-  // expiry (seconds)
-  exp?: number
-}
-
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me-in-production'
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d'
-
-/**
- * Hash a password using bcrypt with a per-user salt (cost factor 12).
- * Replaces the old static-salt SHA-256 scheme.
- */
-export async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, 12)
+  timestamp: number
 }
 
 /**
- * Verify a password against a bcrypt hash.
- * Constant-time comparison — safe against timing attacks.
+ * SHA-256(password + 'auction_salt_2024') → hex
  */
-export async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  return bcrypt.compare(password, hash)
+export function hashPassword(password: string): string {
+  return createHash('sha256').update(password + SALT).digest('hex')
 }
 
 /**
- * Sign a JWT token containing userId + role, valid for JWT_EXPIRES_IN.
- * Replaces the old unsigned base64 token.
+ * Base64("userId:role:timestamp")
  */
-export function createToken(payload: { userId: string; role: Role }): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN as jwt.SignOptions['expiresIn'] })
+export function createToken(payload: TokenPayload): string {
+  const raw = `${payload.userId}:${payload.role}:${payload.timestamp}`
+  return Buffer.from(raw, 'utf-8').toString('base64')
 }
 
 /**
- * Verify & decode a JWT token. Returns null if invalid/expired.
+ * Decode base64 token → TokenPayload | null
  */
-export function decodeToken(token: string): JwtPayload | null {
+export function decodeToken(token: string): TokenPayload | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload
-    if (!decoded.userId || !decoded.role) return null
-    return decoded
+    const raw = Buffer.from(token, 'base64').toString('utf-8')
+    const parts = raw.split(':')
+    if (parts.length !== 3) return null
+    return {
+      userId: parts[0],
+      role: parts[1] as Role,
+      timestamp: parseInt(parts[2], 10),
+    }
   } catch {
     return null
   }
 }
 
-/**
- * Extract token from request:
- *   1. Authorization: Bearer <token>
- *   2. Cookie: auth_token=<token>
- */
 export function getTokenFromRequest(req: Request): string | null {
+  // 1) Authorization: Bearer <token>
   const auth = req.headers.get('authorization')
   if (auth && auth.toLowerCase().startsWith('bearer ')) {
     return auth.slice(7).trim()
   }
+  // 2) cookie auth_token=...
   const cookie = req.headers.get('cookie') || ''
   const match = cookie.match(/(?:^|;\s*)auth_token=([^;]+)/)
   if (match) return match[1]

@@ -37,6 +37,7 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  /* AutoAuction design tokens */
   --color-aa: var(--aa);
   --color-aa-soft: var(--aa-soft);
   --color-aa-ink: var(--aa-ink);
@@ -47,6 +48,7 @@
 }
 
 :root {
+  /* AutoAuction: blue #3A6BFF + clean white */
   --background: #f7f9fc;
   --foreground: #0e1424;
   --card: #ffffff;
@@ -119,55 +121,120 @@
   * {
     @apply border-border outline-ring/50;
   }
-  html, body {
+  html,
+  body {
     @apply bg-background text-foreground;
     font-feature-settings: "cv11", "ss01";
   }
-  .scroll-slim::-webkit-scrollbar { width: 6px; height: 6px; }
-  .scroll-slim::-webkit-scrollbar-thumb { background: rgba(58, 107, 255, 0.25); border-radius: 9999px; }
-  .scroll-slim::-webkit-scrollbar-track { background: transparent; }
+  /* Hide scrollbars but keep scrolling */
+  .scroll-slim::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scroll-slim::-webkit-scrollbar-thumb {
+    background: rgba(58, 107, 255, 0.25);
+    border-radius: 9999px;
+  }
+  .scroll-slim::-webkit-scrollbar-track {
+    background: transparent;
+  }
 }
 
+/* AutoAuction utility classes */
 .aa-card {
   border-radius: 30px;
   background: var(--card);
   border: 1px solid rgba(15, 23, 42, 0.04);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -8px rgba(15, 23, 42, 0.08);
-  transition: box-shadow 280ms cubic-bezier(0.16, 1, 0.3, 1), transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 8px 24px -8px rgba(15, 23, 42, 0.08);
+  transition: box-shadow 280ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
 }
+
 .aa-card-hover:hover {
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 16px 40px -12px rgba(58, 107, 255, 0.18);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.06),
+    0 16px 40px -12px rgba(58, 107, 255, 0.18);
   transform: translateY(-2px);
 }
+
 .aa-soft {
   background: var(--card);
   border-radius: 24px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03), 0 6px 20px -10px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03),
+    0 6px 20px -10px rgba(15, 23, 42, 0.06);
 }
-.aa-grad { background: linear-gradient(135deg, #3A6BFF 0%, #5a86ff 100%); }
+
+.aa-grad {
+  background: linear-gradient(135deg, #3A6BFF 0%, #5a86ff 100%);
+}
+
 .aa-grad-text {
   background: linear-gradient(135deg, #3A6BFF 0%, #7a3aff 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
-.aa-shadow { box-shadow: 0 12px 40px -10px rgba(58, 107, 255, 0.35); }
-.aa-mono { font-family: var(--font-mono); font-feature-settings: "tnum"; }
 
+.aa-shadow {
+  box-shadow: 0 12px 40px -10px rgba(58, 107, 255, 0.35);
+}
+
+.aa-mono {
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum";
+}
+
+/* Pulsing status for PENDING / WAITING-like statuses */
 @keyframes aa-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.55); }
-  50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(245, 158, 11, 0);
+  }
 }
-.aa-pulse { animation: aa-pulse 1.8s ease-in-out infinite; }
 
-.aa-sheet { border-radius: 30px 30px 0 0; }
+.aa-pulse {
+  animation: aa-pulse 1.8s ease-in-out infinite;
+}
 
+@keyframes aa-pulse-won {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+}
+
+.aa-pulse-won {
+  animation: aa-pulse-won 2.2s ease-in-out infinite;
+}
+
+/* Mobile bottom-sheet modal */
+.aa-sheet {
+  border-radius: 30px 30px 0 0;
+}
+
+/* Reduce motion for users that prefer it */
 @media (prefers-reduced-motion: reduce) {
-  .aa-pulse { animation: none; }
+  .aa-pulse,
+  .aa-pulse-won {
+    animation: none;
+  }
 }
 
+/* iOS Safari auto-zooms on input focus when font-size < 16px.
+   Force 16px on mobile to prevent the page-zoom-on-focus behaviour.
+   Combined with the viewport meta (maximum-scale=1, user-scalable=no) this
+   fully disables the auto-zoom that was causing the page to "jump in" when
+   the user started typing in any input/textarea/select. */
 @media (max-width: 768px) {
-  input, textarea, select {
+  input,
+  textarea,
+  select {
     font-size: 16px !important;
   }
 }

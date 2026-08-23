@@ -5,15 +5,9 @@ import { useEffect, useRef } from "react";
 /**
  * Hook для подписки на WebSocket события.
  *
- * Подключается к mini-service на порту 3003 (через Caddy XTransformPort).
- * При получении события вызывает callback.
- *
- * Если WebSocket недоступен (например, на Vercel без mini-service),
- * подключение тихо завершается — приложение продолжает работать в режиме polling.
- *
- * Использование:
- *   useRealtime("lot:created", () => { loadData() })
- *   useRealtime(["lot:created", "lot:deleted"], () => { loadData() })
+ * На Vercel (без mini-service) подключение тихо завершается —
+ * приложение продолжает работать без real-time.
+ * Ошибки в консоли подавляются.
  */
 
 export function useRealtime(
@@ -29,17 +23,32 @@ export function useRealtime(
 
     (async () => {
       try {
-        // Динамический импорт socket.io-client (только на клиенте)
-        const { io } = await import("socket.io-client");
+        const mod = await import("socket.io-client");
         if (cancelled) return;
+        const io = mod.io;
 
-        // Подключаемся через Caddy: / с XTransformPort=3003
+        // Таймаут 3 секунды — если не подключилось, тихо выходим
+        const timeout = setTimeout(() => { cancelled = true; }, 3000);
+
         socket = io("/?XTransformPort=3003", {
           transports: ["websocket"],
-          reconnection: true,
-          reconnectionDelay: 1000,
-          reconnectionAttempts: 5,
+          reconnection: false,
+          timeout: 2000,
         });
+
+        socket.on("connect_error", () => {
+          // WebSocket недоступен (Vercel) — тихо отключаемся
+          clearTimeout(timeout);
+          cancelled = true;
+          socket?.disconnect();
+          socket = null;
+        });
+
+        socket.on("disconnect", () => {
+          clearTimeout(timeout);
+        });
+
+        if (cancelled) { clearTimeout(timeout); return; }
 
         const eventList = Array.isArray(events) ? events : [events];
         eventList.forEach((event) => {
@@ -54,7 +63,7 @@ export function useRealtime(
 
     return () => {
       cancelled = true;
-      socket?.disconnect();
+      try { socket?.disconnect(); } catch {}
     };
   }, []);
 }

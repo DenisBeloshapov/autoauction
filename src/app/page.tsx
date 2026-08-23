@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react";
 
 export default function Page() {
   const { user, loading } = useAuth();
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">

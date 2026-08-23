@@ -20,10 +20,18 @@ export const metadata: Metadata = {
   title: "AutoAuction — Управление японскими аукционными лотами",
   description:
     "Веб-приложение для автоматизации работы с японскими автомобильными аукционами: добавление лотов, отправка заявок, учёт выигрышей и управление доставкой.",
-  keywords: ["AutoAuction", "японские аукционы", "автомобили", "лоты", "доставка"],
+  keywords: [
+    "AutoAuction",
+    "японские аукционы",
+    "автомобили",
+    "лоты",
+    "доставка",
+  ],
   authors: [{ name: "AutoAuction" }],
 };
 
+// Disable iOS auto-zoom on input focus (font-size < 16px triggers zoom).
+// Also prevent pinch-zoom — this is an app-like UI, not a content page.
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
@@ -32,10 +40,16 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html lang="ru" suppressHydrationWarning>
-      <body className={`${nunito.variable} ${jetbrainsMono.variable} antialiased bg-background text-foreground`}>
+      <body
+        className={`${nunito.variable} ${jetbrainsMono.variable} antialiased bg-background text-foreground`}
+      >
         <Providers>{children}</Providers>
         <Sonner position="top-right" richColors closeButton />
       </body>
