@@ -12,7 +12,7 @@ async function main() {
   const admin = await db.user.create({
     data: {
       username: 'admin',
-      password: hashPassword('admin123'),
+      password: await hashPassword('admin123'),
       name: 'Administrator',
       role: 'ADMIN',
       isActive: true,
@@ -22,7 +22,7 @@ async function main() {
   const client = await db.user.create({
     data: {
       username: 'testclient',
-      password: hashPassword('client123'),
+      password: await hashPassword('client123'),
       name: 'Test Client',
       role: 'CLIENT',
       isActive: true,

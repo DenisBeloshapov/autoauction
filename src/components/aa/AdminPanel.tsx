@@ -490,7 +490,7 @@ export function AdminPanel() {
         <div className="space-y-4">
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("wonLots.inputText")}</label>
-            <textarea value={wonInput} onChange={(e) => setWonInput(e.target.value)} placeholder={t("wonLots.inputTextPlaceholder")} rows={5} autoFocus className="w-full rounded-xl border border-input bg-white p-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary resize-none" />
+            <textarea value={wonInput} onChange={(e) => setWonInput(e.target.value)} placeholder={t("wonLots.inputTextPlaceholder")} rows={5} autoFocus className="w-full rounded-[25px] border border-input bg-white p-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary resize-none" />
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -558,9 +558,9 @@ export function AdminPanel() {
           <button onClick={submitNewClient} disabled={!newClient.username || !newClient.password} className="h-10 px-4 rounded-xl aa-grad text-white text-sm font-semibold disabled:opacity-60 hover:brightness-110 transition">{t("common.save")}</button>
         </>}>
         <div className="space-y-3">
-          <input type="text" value={newClient.username} onChange={(e) => setNewClient({ ...newClient, username: e.target.value })} placeholder={t("clients.newUsername")} className="w-full h-11 rounded-xl border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
-          <input type="password" value={newClient.password} onChange={(e) => setNewClient({ ...newClient, password: e.target.value })} placeholder={t("clients.newPassword")} className="w-full h-11 rounded-xl border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
-          <input type="text" value={newClient.name} onChange={(e) => setNewClient({ ...newClient, name: e.target.value })} placeholder={t("clients.newName")} className="w-full h-11 rounded-xl border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+          <input type="text" value={newClient.username} onChange={(e) => setNewClient({ ...newClient, username: e.target.value })} placeholder={t("clients.newUsername")} className="w-full h-11 rounded-[25px] border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+          <input type="password" value={newClient.password} onChange={(e) => setNewClient({ ...newClient, password: e.target.value })} placeholder={t("clients.newPassword")} className="w-full h-11 rounded-[25px] border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+          <input type="text" value={newClient.name} onChange={(e) => setNewClient({ ...newClient, name: e.target.value })} placeholder={t("clients.newName")} className="w-full h-11 rounded-[25px] border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
         </div>
       </Modal>
     </AppShell>
@@ -653,7 +653,7 @@ function AdminDelivery({ wonLots, t }: { wonLots: WonLot[]; t: (k: string) => st
       <div className="mb-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-          <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder={t("delivery.searchPlaceholder")} className="w-full h-12 pl-10 pr-4 rounded-xl border border-input bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary" />
+          <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder={t("delivery.searchPlaceholder")} className="w-full h-12 pl-10 pr-4 rounded-[25px] border border-input bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary" />
         </div>
         {searchQuery && <p className="text-xs text-muted-foreground mt-2">{t("delivery.found")}: <span className="aa-mono font-bold text-primary">{filtered.length}</span> / {withDelivery.length}</p>}
       </div>

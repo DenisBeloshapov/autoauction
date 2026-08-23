@@ -121,14 +121,14 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 placeholder={t("settings.currentPassword")}
-                className="w-full h-11 rounded-xl border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full h-11 rounded-[25px] border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <input
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder={t("settings.newPassword")}
-                className="w-full h-11 rounded-xl border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full h-11 rounded-[25px] border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <button
                 onClick={changePassword}
@@ -151,7 +151,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
               value={settings.emailRecipient || ""}
               onChange={(e) => setSettings({ ...settings, emailRecipient: e.target.value })}
               placeholder="auction@company.com"
-              className="w-full h-11 rounded-xl border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full h-11 rounded-[25px] border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </section>
 
@@ -169,7 +169,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
                   value={settings.smtpHost || ""}
                   onChange={(e) => setSettings({ ...settings, smtpHost: e.target.value })}
                   placeholder="smtp.gmail.com"
-                  className="w-full h-11 rounded-xl border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full h-11 rounded-[25px] border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
               <div>
@@ -179,7 +179,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
                   value={settings.smtpPort || ""}
                   onChange={(e) => setSettings({ ...settings, smtpPort: e.target.value })}
                   placeholder="587"
-                  className="w-full h-11 rounded-xl border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full h-11 rounded-[25px] border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
               <div>
@@ -189,7 +189,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
                   value={settings.smtpUser || ""}
                   onChange={(e) => setSettings({ ...settings, smtpUser: e.target.value })}
                   placeholder="sender@gmail.com"
-                  className="w-full h-11 rounded-xl border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full h-11 rounded-[25px] border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
               <div className="col-span-2">
@@ -199,7 +199,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
                   value={settings.smtpFrom || ""}
                   onChange={(e) => setSettings({ ...settings, smtpFrom: e.target.value })}
                   placeholder='AutoAuction <sender@gmail.com>'
-                  className="w-full h-11 rounded-xl border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full h-11 rounded-[25px] border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
               <div className="col-span-2">
@@ -211,7 +211,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
                   value={smtpPassword}
                   onChange={(e) => setSmtpPassword(e.target.value)}
                   placeholder={settings.smtpPasswordConfigured ? t("settings.smtpPasswordConfigured") : t("settings.smtpPassword")}
-                  className="w-full h-11 rounded-xl border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full h-11 rounded-[25px] border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
             </div>

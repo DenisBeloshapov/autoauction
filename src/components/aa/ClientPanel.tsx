@@ -467,7 +467,7 @@ export function ClientPanel() {
         open={showAdd}
         onClose={() => setShowAdd(false)}
         title={t("lots.add")}
-        size="lg"
+        size="xl"
         footer={
           <>
             <button
@@ -521,7 +521,7 @@ export function ClientPanel() {
                       placeholder={t("lots.lotTextPlaceholder")}
                       rows={2}
                       autoFocus={idx === 0}
-                      className="flex-1 rounded-xl border border-input bg-white p-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                      className="flex-1 rounded-[25px] border border-input bg-white p-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary resize-none"
                     />
                   </div>
                   {entry.trim() && (
@@ -556,7 +556,7 @@ export function ClientPanel() {
               onChange={(e) => setLotComment(e.target.value)}
               placeholder={t("lots.commentAllPlaceholder")}
               rows={2}
-              className="w-full rounded-xl border border-input bg-white p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+              className="w-full rounded-[25px] border border-input bg-white p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
             />
           </div>
         </div>
@@ -629,7 +629,7 @@ export function ClientPanel() {
                   value={ownerFullName}
                   onChange={(e) => setOwnerFullName(e.target.value)}
                   placeholder={t("delivery.ownerFullNamePlaceholder")}
-                  className="w-full h-11 rounded-xl border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full h-11 rounded-[25px] border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
               <div className="space-y-1.5">
@@ -641,7 +641,7 @@ export function ClientPanel() {
                   value={ownerAddress}
                   onChange={(e) => setOwnerAddress(e.target.value)}
                   placeholder={t("delivery.ownerAddressPlaceholder")}
-                  className="w-full h-11 rounded-xl border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full h-11 rounded-[25px] border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
             </motion.div>

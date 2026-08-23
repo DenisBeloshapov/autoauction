@@ -5,12 +5,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type ModalSize = "sm" | "md" | "lg";
+export type ModalSize = "sm" | "md" | "lg" | "xl";
 
 const sizeClass: Record<ModalSize, string> = {
   sm: "sm:max-w-[400px]",
   md: "sm:max-w-[560px]",
   lg: "sm:max-w-[720px]",
+  xl: "sm:max-w-[920px]",
 };
 
 export interface ModalProps {
@@ -81,7 +82,7 @@ export function Modal({ open, onClose, title, size = "md", children, footer }: M
                 </button>
               </div>
             )}
-            <div className="px-5 sm:px-6 py-5 max-h-[65vh] sm:max-h-[70vh] overflow-y-auto scroll-slim">
+            <div className="px-5 sm:px-6 py-5 max-h-[80vh] sm:max-h-[82vh] overflow-y-auto scroll-slim">
               {children}
             </div>
             {footer && (
