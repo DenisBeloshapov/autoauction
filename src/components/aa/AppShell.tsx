@@ -1,11 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { LogOut, Globe, Plus } from "lucide-react";
+import { LogOut, Globe, Plus, Settings } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LanguageToggle } from "@/components/aa/LanguageToggle";
+import { SettingsModal } from "@/components/aa/SettingsModal";
 import { cn } from "@/lib/utils";
 
 export interface Tab {
@@ -25,6 +26,7 @@ export interface AppShellProps {
 export function AppShell({ tabs, activeTab, onTabChange, children, fab }: AppShellProps) {
   const { user, logout } = useAuth();
   const { t } = useLanguage();
+  const [showSettings, setShowSettings] = useState(false);
 
   const Sidebar = (
     <aside className="hidden md:flex md:w-[260px] md:flex-col md:fixed md:inset-y-0 md:left-0 border-r border-border/60 bg-white/70 backdrop-blur-xl px-5 py-6 z-30">
@@ -70,6 +72,16 @@ export function AppShell({ tabs, activeTab, onTabChange, children, fab }: AppShe
         <div className="text-xs text-muted-foreground mb-2">{user?.name || user?.username}</div>
         <div className="flex items-center justify-between gap-2">
           <LanguageToggle />
+          {user?.role === "ADMIN" && (
+            <button
+              onClick={() => setShowSettings(true)}
+              className="h-9 w-9 rounded-xl border border-border bg-white hover:bg-muted flex items-center justify-center transition"
+              title={t("settings.title")}
+              aria-label={t("settings.title")}
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          )}
           <button
             onClick={logout}
             className="h-9 px-3 rounded-xl border border-border bg-white hover:bg-muted text-xs font-medium flex items-center gap-1.5 transition"
@@ -98,6 +110,16 @@ export function AppShell({ tabs, activeTab, onTabChange, children, fab }: AppShe
         </div>
         <div className="flex items-center gap-2">
           <LanguageToggle />
+          {user?.role === "ADMIN" && (
+            <button
+              onClick={() => setShowSettings(true)}
+              className="h-9 w-9 rounded-xl border border-border bg-white hover:bg-muted flex items-center justify-center transition"
+              title={t("settings.title")}
+              aria-label={t("settings.title")}
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          )}
           <button
             onClick={logout}
             className="h-9 w-9 rounded-xl border border-border bg-white hover:bg-muted flex items-center justify-center transition"
@@ -175,6 +197,9 @@ export function AppShell({ tabs, activeTab, onTabChange, children, fab }: AppShe
       </footer>
       {MobileBottomBar}
       {MobileFab}
+      {user?.role === "ADMIN" && (
+        <SettingsModal open={showSettings} onClose={() => setShowSettings(false)} />
+      )}
     </div>
   );
 }

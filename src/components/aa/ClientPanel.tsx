@@ -20,12 +20,13 @@ import {
   Coins,
   Boxes,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { AppShell, type Tab } from "./AppShell";
 import { Modal } from "./Modal";
 import { StatusBadge } from "./StatusBadge";
 import { toast } from "sonner";
-import { stripLotNumber } from "@/lib/utils";
+import { useRealtime } from "@/hooks/use-realtime";
 
 type Lot = {
   id: string;
@@ -35,7 +36,12 @@ type Lot = {
   status: string;
   createdAt: string;
   client: { id: string; name: string | null; username: string };
-  wonLot: { id: string; price: number | null; currency: string; status: string } | null;
+  wonLot: {
+    id: string;
+    price: number | null;
+    currency: string;
+    status: string;
+  } | null;
 };
 
 type WonLot = {
@@ -59,16 +65,35 @@ type WonLot = {
   }[];
 };
 
-const METHODS = ["DUTY", "DISASSEMBLY", "CUT_REAR", "CUT_FRONT", "CUT_REAR_ARCS"] as const;
+const METHODS = [
+  "DUTY",
+  "DISASSEMBLY",
+  "CUT_REAR",
+  "CUT_FRONT",
+  "CUT_REAR_ARCS",
+] as const;
 type Method = (typeof METHODS)[number];
 
+// Stagger animation: cards appear one after another
 const containerVariants = {
   hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.06, delayChildren: 0.05 } },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.06,
+      delayChildren: 0.05,
+    },
+  },
 };
+
 const itemVariants = {
   hidden: { opacity: 0, y: 18, scale: 0.98 },
-  visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring" as const, damping: 22, stiffness: 280 } },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { type: "spring", damping: 22, stiffness: 280 },
+  },
 };
 
 export function ClientPanel() {
@@ -82,6 +107,7 @@ export function ClientPanel() {
   const [lotComment, setLotComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Delivery modal state
   const [deliveryWonLot, setDeliveryWonLot] = useState<WonLot | null>(null);
   const [deliveryMethod, setDeliveryMethod] = useState<Method>("DUTY");
   const [ownerFullName, setOwnerFullName] = useState("");
@@ -112,7 +138,14 @@ export function ClientPanel() {
     }
   }, [token]);
 
-  useEffect(() => { void loadData(); }, [loadData]);
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
+
+  // Realtime: обновляем данные при WS-событиях
+  useRealtime(["lot:created", "lot:updated", "lot:deleted", "wonlot:created", "delivery:created"], () => {
+    loadData();
+  });
 
   const tabs: Tab[] = [
     { key: "myLots", label: t("nav.myLots"), icon: <ListChecks className="w-4 h-4" /> },
@@ -120,15 +153,24 @@ export function ClientPanel() {
     { key: "delivery", label: t("nav.delivery"), icon: <Truck className="w-4 h-4" /> },
   ];
 
-  const addLotEntry = () => setLotEntries((prev) => [...prev, ""]);
-  const removeLotEntry = (idx: number) => setLotEntries((prev) => prev.filter((_, i) => i !== idx));
-  const updateLotEntry = (idx: number, val: string) => setLotEntries((prev) => prev.map((e, i) => (i === idx ? val : e)));
-
-  const extractLotNumber = (text: string): string | null => {
-    const m = text.match(/\d{1,3}(?:[,.]\d{3})+|\d+/);
-    return m ? m[0].replace(/[,.]/g, "") : null;
+  // --- Multiple-lots form helpers ---
+  const addLotEntry = () => {
+    setLotEntries((prev) => [...prev, ""]);
+  };
+  const removeLotEntry = (idx: number) => {
+    setLotEntries((prev) => prev.filter((_, i) => i !== idx));
+  };
+  const updateLotEntry = (idx: number, val: string) => {
+    setLotEntries((prev) => prev.map((e, i) => (i === idx ? val : e)));
   };
 
+  // Extract lot number from text (first number sequence)
+  const extractLotNumber = (text: string): string | null => {
+    const m = text.match(/\d{1,3}(?:,\d{3})+|\d+/);
+    return m ? m[0].replace(/,/g, "") : null;
+  };
+
+  // Valid lots = non-empty entries with an extractable lot number
   const validLots = lotEntries
     .map((text, idx) => ({ idx, text, lotNumber: extractLotNumber(text) }))
     .filter((e) => e.text.trim() && e.lotNumber);
@@ -143,22 +185,29 @@ export function ClientPanel() {
         const res = await fetch("/api/lots", {
           method: "POST",
           headers: authHeaders,
-          body: JSON.stringify({ lotText: entry.text, comment: lotComment || null }),
+          body: JSON.stringify({
+            lotText: entry.text,
+            comment: lotComment || null,
+          }),
         });
-        if (res.ok) created++;
-        else {
+        if (res.ok) {
+          created++;
+        } else {
           failed++;
           const data = await res.json().catch(() => ({}));
           toast.error(`#${entry.lotNumber}: ${data.error || t("common.error")}`);
         }
       }
-      if (created > 0) toast.success(t("lots.batchCreated").replace("{n}", String(created)));
+      if (created > 0) {
+        toast.success(t("lots.batchCreated").replace("{n}", String(created)));
+      }
       if (failed === 0) {
         setLotEntries([""]);
         setLotComment("");
         setShowAdd(false);
         await loadData();
       } else {
+        // Keep entries that failed for correction
         await loadData();
       }
     } finally {
@@ -168,7 +217,10 @@ export function ClientPanel() {
 
   const deleteLot = async (id: string) => {
     if (!confirm(t("lots.deleteConfirm"))) return;
-    const res = await fetch(`/api/lots?id=${id}`, { method: "DELETE", headers: authHeaders });
+    const res = await fetch(`/api/lots?id=${id}`, {
+      method: "DELETE",
+      headers: authHeaders,
+    });
     if (res.ok) {
       toast.success(t("common.success"));
       await loadData();
@@ -239,10 +291,15 @@ export function ClientPanel() {
             </button>
           </div>
           <h1 className="md:hidden text-xl font-bold mb-4">{t("nav.myLots")}</h1>
+
           {lots.length === 0 ? (
             <EmptyState icon={<Package className="w-10 h-10 text-muted-foreground" />} text={t("lots.noLots")} />
           ) : (
-            <MyLotsGrouped lots={lots} t={t} onDelete={deleteLot} />
+            <MyLotsGrouped
+              lots={lots}
+              t={t}
+              onDelete={deleteLot}
+            />
           )}
         </div>
       )}
@@ -253,7 +310,12 @@ export function ClientPanel() {
           {wonLots.length === 0 ? (
             <EmptyState icon={<Trophy className="w-10 h-10 text-muted-foreground" />} text={t("wonLots.noWonLots")} />
           ) : (
-            <motion.div variants={containerVariants} initial="hidden" animate="visible" className="aa-card overflow-hidden">
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="aa-card overflow-hidden"
+            >
               <div className="overflow-x-auto scroll-slim">
                 <table className="w-full text-sm">
                   <thead className="bg-muted/50 text-muted-foreground text-xs uppercase">
@@ -268,9 +330,17 @@ export function ClientPanel() {
                     {wonLots.map((wl) => {
                       const hasDelivery = wl.deliveryReqs.length > 0;
                       return (
-                        <motion.tr key={wl.id} variants={itemVariants} className="border-t border-border/60 hover:bg-muted/30 transition">
-                          <td className="px-4 py-3 aa-mono font-bold text-primary">#{wl.lot.lotNumber}</td>
-                          <td className="px-4 py-3 text-muted-foreground max-w-xs truncate hidden sm:table-cell">{stripLotNumber(wl.lot.rawText) || "—"}</td>
+                        <motion.tr
+                          key={wl.id}
+                          variants={itemVariants}
+                          className="border-t border-border/60 hover:bg-muted/30 transition"
+                        >
+                          <td className="px-4 py-3 aa-mono font-bold text-primary">
+                            #{wl.lot.lotNumber}
+                          </td>
+                          <td className="px-4 py-3 text-muted-foreground max-w-xs truncate hidden sm:table-cell">
+                            {wl.lot.rawText || "—"}
+                          </td>
                           <td className="px-4 py-3 text-right aa-mono font-semibold">
                             {wl.price ? wl.price.toLocaleString() : "—"}{" "}
                             <span className="text-xs text-muted-foreground">{t("wonLots.currency")}</span>
@@ -312,20 +382,34 @@ export function ClientPanel() {
           {wonWithDelivery.length === 0 ? (
             <EmptyState icon={<Truck className="w-10 h-10 text-muted-foreground" />} text={t("delivery.noRequests")} />
           ) : (
-            <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="space-y-4"
+            >
               {wonWithDelivery.map((wl) => {
                 const req = wl.deliveryReqs[0];
                 const isDuty = req?.method === "DUTY";
                 return (
-                  <motion.div key={wl.id} variants={itemVariants} className="aa-card aa-card-hover overflow-hidden">
+                  <motion.div
+                    key={wl.id}
+                    variants={itemVariants}
+                    className="aa-card aa-card-hover overflow-hidden"
+                  >
+                    {/* Header */}
                     <div className="flex items-start justify-between p-5 pb-4 gap-3">
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-11 h-11 rounded-2xl aa-grad flex items-center justify-center flex-shrink-0">
                           <Truck className="w-5 h-5 text-white" />
                         </div>
                         <div className="min-w-0">
-                          <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{t("delivery.lotNumber")}</div>
-                          <div className="text-xl font-extrabold aa-mono text-primary mt-0.5 truncate">#{wl.lot.lotNumber}</div>
+                          <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                            {t("delivery.lotNumber")}
+                          </div>
+                          <div className="text-xl font-extrabold aa-mono text-primary mt-0.5 truncate">
+                            #{wl.lot.lotNumber}
+                          </div>
                         </div>
                       </div>
                       <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold flex-shrink-0">
@@ -333,7 +417,10 @@ export function ClientPanel() {
                         {t("delivery.choosen")}
                       </span>
                     </div>
+
+                    {/* Body */}
                     <div className="px-5 pb-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Lot info */}
                       <div className="space-y-2.5">
                         <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1 flex items-center gap-1.5">
                           <FileText className="w-3 h-3" />
@@ -345,11 +432,17 @@ export function ClientPanel() {
                         <InfoRow icon={<Calendar className="w-3.5 h-3.5" />} label={t("delivery.createdAt")} value={req ? new Date(req.createdAt).toLocaleString() : "—"} />
                         {wl.lot.rawText && (
                           <div className="pt-2 mt-1 border-t border-border/60">
-                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">{t("delivery.rawText")}</div>
-                            <p className="text-xs text-foreground/80 break-words">{stripLotNumber(wl.lot.rawText)}</p>
+                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">
+                              {t("delivery.rawText")}
+                            </div>
+                            <p className="text-xs text-foreground/80 break-words">
+                              {wl.lot.rawText}
+                            </p>
                           </div>
                         )}
                       </div>
+
+                      {/* Owner data (only for DUTY) */}
                       {isDuty && (
                         <div className="space-y-2.5 sm:border-l sm:border-border/60 sm:pl-4">
                           <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1 flex items-center gap-1.5">
@@ -377,7 +470,10 @@ export function ClientPanel() {
         size="lg"
         footer={
           <>
-            <button onClick={() => setShowAdd(false)} className="h-10 px-4 rounded-xl border border-border hover:bg-muted text-sm font-medium transition">
+            <button
+              onClick={() => setShowAdd(false)}
+              className="h-10 px-4 rounded-xl border border-border hover:bg-muted text-sm font-medium transition"
+            >
               {t("common.cancel")}
             </button>
             <button
@@ -392,6 +488,7 @@ export function ClientPanel() {
         }
       >
         <div className="space-y-4">
+          {/* Lot entries list */}
           <div className="space-y-3">
             {lotEntries.map((entry, idx) => {
               const lotNum = extractLotNumber(entry);
@@ -408,29 +505,39 @@ export function ClientPanel() {
                       {t("lots.lotN").replace("{n}", String(idx + 1))}
                     </label>
                     {lotEntries.length > 1 && (
-                      <button onClick={() => removeLotEntry(idx)} className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-0.5 transition" aria-label={t("lots.removeLot")}>
+                      <button
+                        onClick={() => removeLotEntry(idx)}
+                        className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-0.5 transition"
+                        aria-label={t("lots.removeLot")}
+                      >
                         <X className="w-3 h-3" />
                       </button>
                     )}
                   </div>
-                  <textarea
-                    value={entry}
-                    onChange={(e) => updateLotEntry(idx, e.target.value)}
-                    placeholder={t("lots.lotTextPlaceholder")}
-                    rows={2}
-                    autoFocus={idx === 0}
-                    className="w-full rounded-xl border border-input bg-white p-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                  />
+                  <div className="flex items-start gap-2">
+                    <textarea
+                      value={entry}
+                      onChange={(e) => updateLotEntry(idx, e.target.value)}
+                      placeholder={t("lots.lotTextPlaceholder")}
+                      rows={2}
+                      autoFocus={idx === 0}
+                      className="flex-1 rounded-xl border border-input bg-white p-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                    />
+                  </div>
                   {entry.trim() && (
                     <p className="text-xs text-muted-foreground">
                       {t("lots.lotNumber")}:{" "}
-                      <span className="aa-mono font-bold text-primary">{lotNum ? `#${lotNum}` : "—"}</span>
+                      <span className="aa-mono font-bold text-primary">
+                        {lotNum ? `#${lotNum}` : "—"}
+                      </span>
                     </p>
                   )}
                 </motion.div>
               );
             })}
           </div>
+
+          {/* Add another lot button */}
           <button
             onClick={addLotEntry}
             className="w-full h-11 rounded-xl border-2 border-dashed border-border hover:border-primary/40 hover:bg-accent/40 text-sm font-medium text-muted-foreground hover:text-primary flex items-center justify-center gap-1.5 transition"
@@ -438,8 +545,12 @@ export function ClientPanel() {
             <Plus className="w-4 h-4" />
             {t("lots.addAnother")}
           </button>
+
+          {/* Separator */}
           <div className="border-t border-border/60 pt-4 space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("lots.commentAll")}</label>
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              {t("lots.commentAll")}
+            </label>
             <textarea
               value={lotComment}
               onChange={(e) => setLotComment(e.target.value)}
@@ -459,10 +570,16 @@ export function ClientPanel() {
         size="md"
         footer={
           <>
-            <button onClick={() => setDeliveryWonLot(null)} className="h-10 px-4 rounded-xl border border-border hover:bg-muted text-sm font-medium transition">
+            <button
+              onClick={() => setDeliveryWonLot(null)}
+              className="h-10 px-4 rounded-xl border border-border hover:bg-muted text-sm font-medium transition"
+            >
               {t("common.cancel")}
             </button>
-            <button onClick={submitDelivery} className="h-10 px-4 rounded-xl aa-grad text-white text-sm font-semibold transition hover:brightness-110">
+            <button
+              onClick={submitDelivery}
+              className="h-10 px-4 rounded-xl aa-grad text-white text-sm font-semibold transition hover:brightness-110"
+            >
               {t("common.save")}
             </button>
           </>
@@ -472,11 +589,15 @@ export function ClientPanel() {
           {deliveryWonLot && (
             <div className="text-sm text-muted-foreground">
               {t("lots.lotNumber")}:{" "}
-              <span className="aa-mono font-bold text-primary text-base">#{deliveryWonLot.lot.lotNumber}</span>
+              <span className="aa-mono font-bold text-primary text-base">
+                #{deliveryWonLot.lot.lotNumber}
+              </span>
             </div>
           )}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("delivery.method")}</label>
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              {t("delivery.method")}
+            </label>
             <div className="grid grid-cols-1 gap-2">
               {METHODS.map((m) => (
                 <button
@@ -494,9 +615,15 @@ export function ClientPanel() {
             </div>
           </div>
           {deliveryMethod === "DUTY" && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="space-y-3">
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              className="space-y-3"
+            >
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("delivery.ownerFullName")} *</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  {t("delivery.ownerFullName")} *
+                </label>
                 <input
                   type="text"
                   value={ownerFullName}
@@ -506,7 +633,9 @@ export function ClientPanel() {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("delivery.ownerAddress")} *</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  {t("delivery.ownerAddress")} *
+                </label>
                 <input
                   type="text"
                   value={ownerAddress}
@@ -532,6 +661,7 @@ function EmptyState({ icon, text }: { icon: React.ReactNode; text: string }) {
   );
 }
 
+/** Group client lots into "kits" — sets sharing the same non-empty comment. */
 function MyLotsGrouped({
   lots,
   t,
@@ -541,11 +671,17 @@ function MyLotsGrouped({
   t: (k: string) => string;
   onDelete: (id: string) => void | Promise<void>;
 }) {
-  type Group = { key: string; comment: string | null; lots: Lot[] };
+  // Group by comment (lots without a comment → individual group of size 1 each)
+  type Group = {
+    key: string;
+    comment: string | null;
+    lots: Lot[];
+  };
 
   const groups: Group[] = (() => {
     const map = new Map<string, Lot[]>();
     const individual: Lot[] = [];
+
     for (const lot of lots) {
       const c = lot.comment && lot.comment.trim() ? lot.comment.trim() : null;
       if (c) {
@@ -555,6 +691,7 @@ function MyLotsGrouped({
         individual.push(lot);
       }
     }
+
     const out: Group[] = [];
     map.forEach((lotsArr, comment) => {
       out.push({ key: `kit:${comment}`, comment, lots: lotsArr });
@@ -566,39 +703,72 @@ function MyLotsGrouped({
   })();
 
   return (
-    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-6"
+    >
       {groups.map((group) => {
         const isKit = group.lots.length > 1;
         return (
           <motion.div key={group.key} variants={itemVariants} className="space-y-3">
+            {/* Kit header */}
             {isKit && (
               <div className="flex items-center gap-2.5 px-2">
                 <div className="w-7 h-7 rounded-lg bg-accent text-accent-foreground flex items-center justify-center flex-shrink-0">
                   <Boxes className="w-4 h-4" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{t("lots.kit")}</div>
-                  <div className="text-sm font-semibold text-foreground truncate">💬 {group.comment}</div>
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                    {t("lots.kit")}
+                  </div>
+                  <div className="text-sm font-semibold text-foreground truncate">
+                    💬 {group.comment}
+                  </div>
                 </div>
-                <span className="ml-auto text-xs text-muted-foreground aa-mono">{group.lots.length} {t("lots.kitLots")}</span>
+                <span className="ml-auto text-xs text-muted-foreground aa-mono">
+                  {group.lots.length} {t("lots.kitLots")}
+                </span>
               </div>
             )}
+
+            {/* Lots grid */}
             <div className={`grid grid-cols-1 ${group.lots.length > 1 ? "md:grid-cols-2" : ""} gap-4`}>
               {group.lots.map((lot) => (
-                <motion.div key={lot.id} layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="aa-card aa-card-hover p-5">
+                <motion.div
+                  key={lot.id}
+                  layout
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="aa-card aa-card-hover p-5"
+                >
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div>
-                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{t("lots.lotNumber")}</div>
-                      <div className="text-2xl font-extrabold aa-mono text-primary mt-0.5">#{lot.lotNumber}</div>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                        {t("lots.lotNumber")}
+                      </div>
+                      <div className="text-2xl font-extrabold aa-mono text-primary mt-0.5">
+                        #{lot.lotNumber}
+                      </div>
                     </div>
                     <StatusBadge status={lot.status} label={t(`status.${lot.status}`)} />
                   </div>
-                  {lot.rawText && <p className="text-sm text-foreground mb-2 break-words">{stripLotNumber(lot.rawText)}</p>}
+                  {lot.rawText && (
+                    <p className="text-sm text-foreground mb-2 break-words">
+                      {lot.rawText}
+                    </p>
+                  )}
+                  {/* For single lots (no kit) show comment inline */}
                   {!isKit && lot.comment && (
-                    <p className="text-xs text-muted-foreground italic bg-muted/40 rounded-lg px-2.5 py-1.5">💬 {lot.comment}</p>
+                    <p className="text-xs text-muted-foreground italic bg-muted/40 rounded-lg px-2.5 py-1.5">
+                      💬 {lot.comment}
+                    </p>
                   )}
                   <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/60">
-                    <span className="text-xs text-muted-foreground">{new Date(lot.createdAt).toLocaleDateString()}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(lot.createdAt).toLocaleDateString()}
+                    </span>
                     <button
                       onClick={() => onDelete(lot.id)}
                       className="text-xs text-destructive hover:underline flex items-center gap-1 transition"
@@ -629,10 +799,16 @@ function InfoRow({
 }) {
   return (
     <div className="flex items-start gap-2.5">
-      <div className="w-6 h-6 rounded-md bg-muted/60 flex items-center justify-center flex-shrink-0 mt-0.5 text-muted-foreground">{icon}</div>
+      <div className="w-6 h-6 rounded-md bg-muted/60 flex items-center justify-center flex-shrink-0 mt-0.5 text-muted-foreground">
+        {icon}
+      </div>
       <div className="min-w-0 flex-1">
-        <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{label}</div>
-        <div className={`text-sm text-foreground break-words ${mono ? "aa-mono font-semibold" : "font-medium"}`}>{value}</div>
+        <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+          {label}
+        </div>
+        <div className={`text-sm text-foreground break-words ${mono ? "aa-mono font-semibold" : "font-medium"}`}>
+          {value}
+        </div>
       </div>
     </div>
   );

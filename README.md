@@ -1,105 +1,107 @@
 # Изменённые файлы — обновление для GitHub
 
-Эти файлы нужно скопировать в ваш GitHub-репозиторий, заменив существующие.
-
-## Список изменённых файлов
+## Список изменённых файлов (21 файл)
 
 ```
 changed-files/
-├── package.json                                              ← обновлён build script
+├── package.json                                              ← добавлены nodemailer, socket.io-client, @types/nodemailer
 ├── prisma/
-│   ├── schema.prisma                                        ← добавлено поле bodyNumber
-│   ├── schema.postgres.prisma                               ← добавлено поле bodyNumber
+│   ├── schema.prisma                                        ← +bodyNumber, +Setting model
+│   ├── schema.postgres.prisma                               ← +bodyNumber, +Setting model
 │   └── migrations/
-│       └── 20260823000000_add_body_number/
-│           └── migration.sql                                ← НОВАЯ миграция
+│       ├── 20260823000000_add_body_number/migration.sql     ← НОВАЯ миграция (bodyNumber)
+│       └── 20260823000001_add_settings/migration.sql        ← НОВАЯ миграция (Setting table)
 ├── src/
 │   ├── app/api/
-│   │   ├── debug/route.ts                                   ← без изменений (диагностика)
-│   │   ├── email/route.ts                                  ← отрезает номер из rawText
-│   │   ├── lots/route.ts                                   ← отрезает номер из rawText при создании
-│   │   └── won-lots/route.ts                                ← извлекает bodyNumber при ставках
+│   │   ├── auth/change-password/route.ts                    ← НОВЫЙ endpoint (смена пароля)
+│   │   ├── email/route.ts                                   ← SMTP отправка + эмит WS
+│   │   ├── lots/route.ts                                    ← эмит WS + stripLotNumber
+│   │   ├── settings/route.ts                                ← НОВЫЙ endpoint (настройки)
+│   │   └── won-lots/route.ts                                ← эмит WS
 │   ├── components/aa/
-│   │   ├── AdminPanel.tsx                                  ← комплекты + таб Доставка + поиск
-│   │   └── ClientPanel.tsx                                 ← отрезает номер из rawText
+│   │   ├── AdminPanel.tsx                                  ← комплекты в карточки + WS + таб Доставка
+│   │   ├── AppShell.tsx                                    ← шестерёнка настроек
+│   │   ├── ClientPanel.tsx                                 ← stripLotNumber + WS
+│   │   └── SettingsModal.tsx                               ← НОВАЯ модалка настроек
 │   ├── contexts/
-│   │   └── LanguageContext.tsx                              ← новые i18n ключи
+│   │   └── LanguageContext.tsx                             ← +ключи settings, +bodyNumber
+│   ├── hooks/
+│   │   └── use-realtime.ts                                 ← НОВЫЙ hook для WebSocket
 │   └── lib/
-│       └── utils.ts                                        ← функции stripLotNumber, parseSearchTerms
+│       ├── email.ts                                         ← НОВЫЙ helper SMTP
+│       ├── realtime.ts                                     ← НОВЫЙ helper WS emit
+│       └── utils.ts                                        ← +stripLotNumber, +parseSearchTerms
+└── mini-services/
+    └── realtime/
+        ├── index.ts                                         ← НОВЫЙ WebSocket service (порт 3003)
+        └── package.json                                     ← НОВЫЙ package для mini-service
 ```
 
 ## Как обновить
 
-### Вариант 1: Через git (рекомендуется)
+1. Скачайте архив `autoauction-changed-files.tar.gz`
+2. Распакуйте
+3. Скопируйте файлы в репозиторий, сохраняя структуру папок
+4. Закоммитьте и запушьте на GitHub
 
 ```bash
-# В папке вашего локального проекта
-# Скопируйте файлы из changed-files/ в корень проекта с заменой
-
-# Linux/macOS:
-cp -r changed-files/* .
-
-# Windows (PowerShell):
-Copy-Item -Path changed-files\* -Destination . -Recurse -Force
-
-# Закоммитить и запушить
 git add -A
-git commit -m "UI: kits for admin, delivery tab with search, strip lot number from rawText"
+git commit -m "UI: kit cards, settings modal, SMTP, WebSocket, stripLotNumber"
 git push
 ```
 
-### Вариант 2: Вручную через GitHub web-интерфейс
-
-Зайдите в репозиторий на GitHub и загрузите каждый файл через "Upload files", сохраняя структуру папок.
-
 ## Что нового
 
-### 1. Комплекты у админа в «Все лоты»
-- Лоты с одинаковым комментарием одного клиента группируются в комплект
-- Заголовок комплекта: «📦 Комплект · Имя клиента · 💬 комментарий · N лотов»
-- Лоты без комментария показываются отдельно
+### 1. Комплекты в карточки с одним чекмарком
+- Лоты с одинаковым комментарием одного клиента → в одну карточку
+- ОДИН чекмарк на весь комплект (выбирает/снимает все лоты)
+- Indeterminate state (квадратик) если выбрана часть лотов
 
-### 2. Убран номер лота из «Оригинального текста»
-- При создании лота номер автоматически отрезается из rawText
-- Везде в отображении (таблицы, карточки, email) номер не дублируется
-- Пример: было «12345 Toyota Camry 2023 White» → стало «Toyota Camry 2023 White»
+### 2. Placeholder ФИО
+- «Иванов Иван Иванович» вместо «Иванов И.И.»
 
-### 3. Новый таб «Доставка» у админа
-- Показывает все доставки всех клиентов (как у клиента, но для всех)
-- Поле поиска поддерживает несколько номеров кузова/лота
-- Разделители: запятая, пробел, перенос строки, точка с запятой
-- Пример: «Toyota, Honda, 12345» найдёт все лоты где есть любое из этих слов
+### 3. Настройки админа (шестерёнка)
+- Смена пароля (текущий + новый)
+- Email получателя (куда отправлять список лотов)
+- SMTP настройки (host, port, user, from, password)
+- Если SMTP не настроен — email только формируется (можно скопировать)
+- Если SMTP настроен — email отправляется автоматически
 
-### 4. bodyNumber (номер кузова) при принятии ставок
-- При «Принять ставки» парсер извлекает:
-  - lotNumber (первое число)
-  - price (последнее число)
-  - bodyNumber (текст между ними — номер кузова)
-- Пример: «12345 HONDA PRELUDE white 500000»
-  → lotNumber=12345, price=500000, bodyNumber="HONDA PRELUDE white"
-- bodyNumber сохраняется в БД и используется для поиска в «Доставка»
-- В предпросмотре ставок добавлена колонка «Номер кузова»
+### 4. SMTP отправка
+- nodemailer
+- При «Сформировать email» — пытается отправить через SMTP
+- Возвращает `smtpSent: true/false` и `smtpError` если ошибка
 
-### 5. Раздел «Выигранные» у админа
-- Колонка «Оригинальный текст» заменена на «Номер кузова» (bodyNumber)
-- Если bodyNumber пустой — показывается отрезанный rawText
+### 5. WebSocket (real-time обновления)
+- Mini-service на порту 3003 (mini-services/realtime/)
+- Socket.io
+- События: lot:created, lot:updated, lot:deleted, wonlot:created, delivery:created, email:sent
+- При получении события — фронтенд автоматически обновляет данные
+- Если WS недоступен — приложение работает в обычном режиме (polling при действиях)
 
-## Миграция БД (автоматически)
+### 6. Миграции БД
+- `20260823000000_add_body_number` — добавляет колонку bodyNumber в WonLot
+- `20260823000001_add_settings` — создаёт таблицу Setting
+- Применяются автоматически при деплое через `prisma migrate deploy`
 
-Файл `prisma/migrations/20260823000000_add_body_number/migration.sql` добавит колонку `bodyNumber` в таблицу `WonLot`. Миграция применяется автоматически при деплое на Vercel (через `prisma migrate deploy` в build script).
+## Запуск mini-service (WebSocket)
 
-Для локальной разработки выполните:
+Mini-service нужно запускать отдельно для real-time обновлений:
+
 ```bash
-npx prisma migrate dev --name add_body_number
-# или
-npx prisma db push
+cd mini-services/realtime
+npm install  # или bun install
+bun run dev  # запустит на порту 3003
 ```
+
+На Vercel mini-service не запускается автоматически — приложение работает без real-time, но все остальные функции доступны.
 
 ## После обновления
 
-1. Запушьте изменения на GitHub
-2. Vercel автоматически задеплоит (1-2 минуты)
-3. Проверьте:
-   - Зайдите как admin → «Все лоты» → увидите комплекты
-   - Зайдите как admin → «Доставка» → попробуйте поиск
-   - Зайдите как admin → «Принять ставки» → вставьте «12345 HONDA PRELUDE white 500000» → увидите bodyNumber в предпросмотре
+1. Запушьте на GitHub
+2. Vercel задеплоит (1-2 минуты)
+3. Миграции применятся автоматически
+4. Проверьте:
+   - admin → «Все лоты» → комплекты в карточках
+   - admin → шестерёнка → настройки (смена пароля, email, SMTP)
+   - admin → «Сформировать email» → если SMTP настроен, email отправится автоматически

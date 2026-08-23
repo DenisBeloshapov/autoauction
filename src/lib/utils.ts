@@ -17,7 +17,6 @@ export function cn(...inputs: ClassValue[]) {
  */
 export function stripLotNumber(rawText: string | null | undefined): string {
   if (!rawText) return ""
-  // Отрезаем только число в самом начале строки (с возможными thousand separators)
   const match = rawText.match(/^\s*(\d{1,3}(?:[,.]\d{3})+|\d+)\s+/)
   if (!match) return rawText.trim()
   return rawText.slice(match[0].length).trim()

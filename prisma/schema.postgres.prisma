@@ -1,12 +1,5 @@
 // AutoAuction — schema v1.0 (PostgreSQL для продакшена на Vercel/Neon)
 // Скопируйте этот файл в prisma/schema.prisma перед миграцией на PostgreSQL.
-// Локальная разработка использует prisma/schema.prisma (sqlite), а для Vercel
-// используйте этот файл.
-//
-// Команды:
-//   cp prisma/schema.postgres.prisma prisma/schema.prisma
-//   npx prisma migrate dev --name init
-//   npm run db:seed
 
 generator client {
   provider = "prisma-client-js"
@@ -61,10 +54,10 @@ model WonLot {
   lotId      String   @unique
   price      Float?
   currency   String   @default("JPY")
-  bodyNumber String?  // Номер кузова / описание из текста между lotNumber и price
+  bodyNumber String?
   status     String   @default("WON")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   lot          Lot              @relation(fields: [lotId], references: [id], onDelete: Cascade)
   deliveryReqs DeliveryRequest[]
@@ -97,4 +90,11 @@ model EmailBatch {
   sentAt         DateTime @default(now())
 
   lots Lot[]
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String?
+  updatedAt DateTime @updatedAt
 }
