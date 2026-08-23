@@ -15,13 +15,23 @@ import {
   Inbox,
   ChevronRight,
   ArrowLeft,
+  Truck,
+  Check,
+  User,
+  MapPin,
+  Hash,
+  FileText,
+  Calendar,
+  Coins,
+  Boxes,
+  Search,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { AppShell, type Tab } from "./AppShell";
 import { Modal } from "./Modal";
 import { StatusBadge } from "./StatusBadge";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, stripLotNumber, parseSearchTerms } from "@/lib/utils";
 
 type Lot = {
   id: string;
@@ -38,6 +48,7 @@ type WonLot = {
   id: string;
   price: number | null;
   currency: string;
+  bodyNumber: string | null;
   status: string;
   lot: {
     id: string;
@@ -45,6 +56,14 @@ type WonLot = {
     rawText: string | null;
     client: { id: string; name: string | null; username: string };
   };
+  deliveryReqs: {
+    id: string;
+    method: string | null;
+    status: string;
+    ownerFullName: string | null;
+    ownerAddress: string | null;
+    createdAt: string;
+  }[];
 };
 
 type EmailBatch = {
@@ -74,17 +93,28 @@ const itemVariants = {
   visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring" as const, damping: 22, stiffness: 280 } },
 };
 
-// NEW PARSER: handles dots AND commas as thousand separators.
-// "230.000" → 230000, "230,000" → 230000, "1,500,000" → 1500000
-// Date "14.04.2026" → split into 14, 04, 2026 (intermediate numbers ignored)
-function parseWonText(text: string): { lotNumber: string; price: string }[] {
-  const out: { lotNumber: string; price: string }[] = [];
+// Парсер: извлекает lotNumber (первое число), price (последнее число, поддерживает
+// точки/запятые как thousand separators), и bodyNumber (текст между ними — номер кузова).
+function parseWonText(text: string): { lotNumber: string; price: string; bodyNumber: string | null }[] {
+  const out: { lotNumber: string; price: string; bodyNumber: string | null }[] = [];
   const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   for (const line of lines) {
     const nums = line.match(/\d{1,3}(?:[,.]\d{3})+|\d+/g) || [];
-    const clean = nums.map((n) => n.replace(/[,.]/g, "")).filter(Boolean);
-    if (clean.length === 0) continue;
-    out.push({ lotNumber: clean[0], price: clean[clean.length - 1] });
+    if (nums.length === 0) continue;
+    const firstNum = nums[0];
+    const lastNum = nums[nums.length - 1];
+    const lotNumber = firstNum.replace(/[,.]/g, "");
+    const price = lastNum.replace(/[,.]/g, "");
+
+    // Извлекаем текст между первым и последним числом
+    const firstIdx = line.indexOf(firstNum);
+    const lastIdx = line.lastIndexOf(lastNum);
+    let bodyNumber: string | null = null;
+    if (firstIdx !== -1 && lastIdx !== -1 && lastIdx > firstIdx + firstNum.length) {
+      bodyNumber = line.substring(firstIdx + firstNum.length, lastIdx).trim() || null;
+    }
+
+    out.push({ lotNumber, price, bodyNumber });
   }
   return out;
 }
@@ -202,6 +232,7 @@ export function AdminPanel() {
   const tabs: Tab[] = [
     { key: "allLots", label: t("nav.allLots"), icon: <Layers className="w-4 h-4" /> },
     { key: "wonLots", label: t("nav.wonLots"), icon: <Trophy className="w-4 h-4" /> },
+    { key: "delivery", label: t("nav.delivery"), icon: <Truck className="w-4 h-4" /> },
     { key: "clients", label: t("nav.clients"), icon: <Users className="w-4 h-4" /> },
     { key: "emailHistory", label: t("email.history"), icon: <Mail className="w-4 h-4" /> },
   ];
@@ -352,6 +383,7 @@ export function AdminPanel() {
         index: idx + 1,
         lotNumber: p.lotNumber,
         price: isNaN(priceNum) ? null : priceNum,
+        bodyNumber: p.bodyNumber,
         client: known?.client || null,
         rawText: known?.rawText || null,
         matched: !!known,
@@ -440,72 +472,19 @@ export function AdminPanel() {
           {lots.length === 0 ? (
             <EmptyState icon={<Inbox className="w-10 h-10 text-muted-foreground" />} text={t("lots.noLots")} />
           ) : (
-            <motion.div variants={containerVariants} initial="hidden" animate="visible" className="aa-card overflow-hidden">
-              <div className="overflow-x-auto scroll-slim">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 text-muted-foreground text-xs uppercase">
-                    <tr>
-                      <th className="text-left px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={lots.length > 0 && lots.every((l) => selectedIds.has(l.id))}
-                            onChange={toggleSelectAll}
-                            className="w-4 h-4 accent-[#3A6BFF]"
-                            aria-label={t("common.all")}
-                          />
-                          <span>{t("lots.lotNumber")}</span>
-                        </div>
-                      </th>
-                      <th className="text-left px-4 py-3">{t("lots.client")}</th>
-                      <th className="text-left px-4 py-3 hidden sm:table-cell">{t("lots.rawText")}</th>
-                      <th className="text-left px-4 py-3">{t("lots.status")}</th>
-                      <th className="text-left px-4 py-3">{t("common.actions")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {lots.map((lot) => (
-                      <motion.tr key={lot.id} variants={itemVariants} className="border-t border-border/60 hover:bg-muted/30 transition">
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={selectedIds.has(lot.id)}
-                              onChange={() => toggleSelect(lot.id)}
-                              className="w-4 h-4 accent-[#3A6BFF]"
-                            />
-                            <span className="aa-mono font-bold text-primary">#{lot.lotNumber}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-xs">{lot.client.name || lot.client.username}</td>
-                        <td className="px-4 py-3 text-muted-foreground max-w-xs truncate hidden sm:table-cell">
-                          {lot.rawText || "—"}
-                          {lot.comment && (
-                            <div className="text-xs italic mt-1 text-foreground/80">💬 {lot.comment}</div>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <StatusBadge status={lot.status} label={t(`status.${lot.status}`)} />
-                        </td>
-                        <td className="px-4 py-3">
-                          <button
-                            onClick={() => deleteLot(lot.id)}
-                            className="text-xs text-destructive hover:underline flex items-center gap-1 transition"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </td>
-                      </motion.tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </motion.div>
+            <AdminLotsGrouped
+              lots={lots}
+              t={t}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelect}
+              onToggleSelectAll={toggleSelectAll}
+              onDelete={deleteLot}
+            />
           )}
         </div>
       )}
 
-      {/* НОВОЕ: «Выигранные» — БЕЗ колонки #, С колонкой Клиент */}
+      {/* «Выигранные» — с bodyNumber (номер кузова), без # колонки, с клиентом */}
       {activeTab === "wonLots" && (
         <div>
           <div className="flex items-center justify-between mb-5">
@@ -527,7 +506,7 @@ export function AdminPanel() {
                     <tr>
                       <th className="text-left px-4 py-3">{t("lots.lotNumber")}</th>
                       <th className="text-left px-4 py-3">{t("lots.client")}</th>
-                      <th className="text-left px-4 py-3 hidden sm:table-cell">{t("lots.rawText")}</th>
+                      <th className="text-left px-4 py-3 hidden sm:table-cell">{t("wonLots.bodyNumber")}</th>
                       <th className="text-right px-4 py-3">{t("wonLots.price")}</th>
                     </tr>
                   </thead>
@@ -537,7 +516,7 @@ export function AdminPanel() {
                         <td className="px-4 py-3 aa-mono font-bold text-primary">#{wl.lot.lotNumber}</td>
                         <td className="px-4 py-3 text-xs">{wl.lot.client.name || wl.lot.client.username}</td>
                         <td className="px-4 py-3 text-muted-foreground max-w-xs truncate hidden sm:table-cell">
-                          {wl.lot.rawText || "—"}
+                          {wl.bodyNumber || stripLotNumber(wl.lot.rawText) || "—"}
                         </td>
                         <td className="px-4 py-3 text-right aa-mono font-semibold">
                           {wl.price ? wl.price.toLocaleString() : "—"}{" "}
@@ -551,6 +530,14 @@ export function AdminPanel() {
             </motion.div>
           )}
         </div>
+      )}
+
+      {/* НОВОЕ: «Доставка» у админа — с поиском по bodyNumber (несколько) */}
+      {activeTab === "delivery" && (
+        <AdminDelivery
+          wonLots={wonLots}
+          t={t}
+        />
       )}
 
       {activeTab === "clients" && (
@@ -792,6 +779,7 @@ export function AdminPanel() {
                       <tr>
                         <th className="text-left px-3 py-2 w-8">#</th>
                         <th className="text-left px-3 py-2">{t("lots.lotNumber")}</th>
+                        <th className="text-left px-3 py-2 hidden sm:table-cell">{t("wonLots.bodyNumber")}</th>
                         <th className="text-left px-3 py-2 hidden sm:table-cell">{t("lots.client")}</th>
                         <th className="text-right px-3 py-2">{t("wonLots.price")}</th>
                         <th className="text-left px-3 py-2">{t("lots.status")}</th>
@@ -802,6 +790,7 @@ export function AdminPanel() {
                         <tr key={`${p.lotNumber}-${p.index}`} className={cn("border-t border-border/40", !p.matched && "bg-red-50/40")}>
                           <td className="px-3 py-2 text-xs text-muted-foreground aa-mono">{p.index}</td>
                           <td className="px-3 py-2 aa-mono font-bold text-primary">#{p.lotNumber}</td>
+                          <td className="px-3 py-2 text-xs hidden sm:table-cell text-muted-foreground">{p.bodyNumber || "—"}</td>
                           <td className="px-3 py-2 text-xs hidden sm:table-cell text-muted-foreground">{p.client || "—"}</td>
                           <td className="px-3 py-2 text-right aa-mono font-semibold">
                             {p.price !== null ? p.price.toLocaleString() : "—"}{" "}
@@ -820,7 +809,7 @@ export function AdminPanel() {
                     {wonTotal > 0 && (
                       <tfoot>
                         <tr className="border-t-2 border-border bg-muted/40">
-                          <td colSpan={3} className="px-3 py-3 text-right text-xs font-semibold uppercase text-muted-foreground">
+                          <td colSpan={4} className="px-3 py-3 text-right text-xs font-semibold uppercase text-muted-foreground">
                             {t("wonLots.total")}:
                           </td>
                           <td className="px-3 py-3 text-right aa-mono font-bold text-primary text-base">
@@ -938,6 +927,274 @@ function EmptyState({ icon, text }: { icon: React.ReactNode; text: string }) {
     <div className="aa-card p-12 flex flex-col items-center justify-center text-center">
       {icon}
       <p className="text-sm text-muted-foreground mt-3">{text}</p>
+    </div>
+  );
+}
+
+/**
+ * «Все лоты» у админа — комплекты по (clientId + comment).
+ * Лоты с одинаковым комментарием одного клиента группируются в комплект.
+ * Лоты без комментария показываются отдельно.
+ */
+function AdminLotsGrouped({
+  lots,
+  t,
+  selectedIds,
+  onToggleSelect,
+  onToggleSelectAll,
+  onDelete,
+}: {
+  lots: Lot[];
+  t: (k: string) => string;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
+  onToggleSelectAll: () => void;
+  onDelete: (id: string) => void | Promise<void>;
+}) {
+  type Group = { key: string; comment: string | null; clientName: string; lots: Lot[] };
+
+  const groups: Group[] = (() => {
+    const map = new Map<string, Lot[]>();
+    const individual: Lot[] = [];
+    for (const lot of lots) {
+      const c = lot.comment && lot.comment.trim() ? lot.comment.trim() : null;
+      if (c) {
+        // Группируем по clientId + comment (комплекты в пределах одного клиента)
+        const key = `${lot.clientId}::${c}`;
+        if (!map.has(key)) map.set(key, []);
+        map.get(key)!.push(lot);
+      } else {
+        individual.push(lot);
+      }
+    }
+    const out: Group[] = [];
+    map.forEach((lotsArr, key) => {
+      const [clientId, comment] = key.split("::");
+      const clientName = lotsArr[0]?.client.name || lotsArr[0]?.client.username || "—";
+      out.push({ key, comment, clientName, lots: lotsArr });
+    });
+    for (const lot of individual) {
+      out.push({
+        key: `single:${lot.id}`,
+        comment: null,
+        clientName: lot.client.name || lot.client.username,
+        lots: [lot],
+      });
+    }
+    return out;
+  })();
+
+  return (
+    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-6">
+      {groups.map((group) => {
+        const isKit = group.lots.length > 1;
+        return (
+          <motion.div key={group.key} variants={itemVariants} className="space-y-3">
+            {isKit && (
+              <div className="flex items-center gap-2.5 px-2">
+                <div className="w-7 h-7 rounded-lg bg-accent text-accent-foreground flex items-center justify-center flex-shrink-0">
+                  <Boxes className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                    {t("lots.kit")} · {group.clientName}
+                  </div>
+                  <div className="text-sm font-semibold text-foreground truncate">💬 {group.comment}</div>
+                </div>
+                <span className="ml-auto text-xs text-muted-foreground aa-mono">
+                  {group.lots.length} {t("lots.kitLots")}
+                </span>
+              </div>
+            )}
+            <div className={`grid grid-cols-1 ${group.lots.length > 1 ? "md:grid-cols-2" : ""} gap-4`}>
+              {group.lots.map((lot) => (
+                <motion.div key={lot.id} layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="aa-card aa-card-hover p-5">
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(lot.id)}
+                        onChange={() => onToggleSelect(lot.id)}
+                        className="w-4 h-4 accent-[#3A6BFF] flex-shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                          {t("lots.lotNumber")}
+                        </div>
+                        <div className="text-2xl font-extrabold aa-mono text-primary mt-0.5">#{lot.lotNumber}</div>
+                      </div>
+                    </div>
+                    <StatusBadge status={lot.status} label={t(`status.${lot.status}`)} />
+                  </div>
+                  {lot.rawText && (
+                    <p className="text-sm text-foreground mb-2 break-words">{stripLotNumber(lot.rawText)}</p>
+                  )}
+                  {!isKit && lot.comment && (
+                    <p className="text-xs text-muted-foreground italic bg-muted/40 rounded-lg px-2.5 py-1.5">💬 {lot.comment}</p>
+                  )}
+                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/60">
+                    <span className="text-xs text-muted-foreground">
+                      {group.clientName} · {new Date(lot.createdAt).toLocaleDateString()}
+                    </span>
+                    <button
+                      onClick={() => onDelete(lot.id)}
+                      className="text-xs text-destructive hover:underline flex items-center gap-1 transition"
+                    >
+                      <Trash2 className="w-3 h-3" /> {t("common.delete")}
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        );
+      })}
+    </motion.div>
+  );
+}
+
+/**
+ * «Доставка» у админа — все доставки всех клиентов с поиском по bodyNumber.
+ * Поиск поддерживает несколько номеров кузова (через запятую/пробел/перенос).
+ */
+function AdminDelivery({
+  wonLots,
+  t,
+}: {
+  wonLots: WonLot[];
+  t: (k: string) => string;
+}) {
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Только лоты с выбранной доставкой
+  const withDelivery = wonLots.filter((w) => w.deliveryReqs.length > 0);
+
+  // Фильтрация по поисковому запросу (поддержка нескольких терминов)
+  const filtered = useMemo(() => {
+    const terms = parseSearchTerms(searchQuery);
+    if (terms.length === 0) return withDelivery;
+    return withDelivery.filter((wl) => {
+      const bodyNum = (wl.bodyNumber || stripLotNumber(wl.lot.rawText) || "").toLowerCase();
+      const lotNum = wl.lot.lotNumber.toLowerCase();
+      // Лот подходит, если хотя бы один из термов найден в bodyNumber или lotNumber
+      return terms.some((term) => {
+        const tLower = term.toLowerCase();
+        return bodyNum.includes(tLower) || lotNum.includes(tLower);
+      });
+    });
+  }, [withDelivery, searchQuery]);
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
+        <h1 className="text-2xl font-bold">{t("nav.delivery")}</h1>
+      </div>
+
+      {/* Поиск по bodyNumber (несколько номеров через запятую/пробел) */}
+      <div className="mb-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t("delivery.searchPlaceholder")}
+            className="w-full h-12 pl-10 pr-4 rounded-xl border border-input bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
+        {searchQuery && (
+          <p className="text-xs text-muted-foreground mt-2">
+            {t("delivery.found")}: <span className="aa-mono font-bold text-primary">{filtered.length}</span> / {withDelivery.length}
+          </p>
+        )}
+      </div>
+
+      {withDelivery.length === 0 ? (
+        <EmptyState icon={<Truck className="w-10 h-10 text-muted-foreground" />} text={t("delivery.noRequests")} />
+      ) : filtered.length === 0 ? (
+        <EmptyState icon={<Search className="w-10 h-10 text-muted-foreground" />} text={t("delivery.noSearchResults")} />
+      ) : (
+        <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
+          {filtered.map((wl) => {
+            const req = wl.deliveryReqs[0];
+            const isDuty = req?.method === "DUTY";
+            return (
+              <motion.div key={wl.id} variants={itemVariants} className="aa-card aa-card-hover overflow-hidden">
+                <div className="flex items-start justify-between p-5 pb-4 gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-11 h-11 rounded-2xl aa-grad flex items-center justify-center flex-shrink-0">
+                      <Truck className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                        {t("delivery.lotNumber")}
+                      </div>
+                      <div className="text-xl font-extrabold aa-mono text-primary mt-0.5 truncate">#{wl.lot.lotNumber}</div>
+                    </div>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold flex-shrink-0">
+                    <Check className="w-3.5 h-3.5" />
+                    {t("delivery.choosen")}
+                  </span>
+                </div>
+                <div className="px-5 pb-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2.5">
+                    <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1 flex items-center gap-1.5">
+                      <FileText className="w-3 h-3" />
+                      {t("delivery.lotInfo")}
+                    </div>
+                    <InfoRow icon={<Hash className="w-3.5 h-3.5" />} label={t("delivery.lotNumber")} value={`#${wl.lot.lotNumber}`} mono />
+                    <InfoRow
+                      icon={<FileText className="w-3.5 h-3.5" />}
+                      label={t("wonLots.bodyNumber")}
+                      value={wl.bodyNumber || stripLotNumber(wl.lot.rawText) || "—"}
+                    />
+                    <InfoRow icon={<Coins className="w-3.5 h-3.5" />} label={t("delivery.price")} value={wl.price ? `${wl.price.toLocaleString()} ${t("wonLots.currency")}` : "—"} mono />
+                    <InfoRow icon={<Truck className="w-3.5 h-3.5" />} label={t("delivery.method")} value={req?.method ? t(`delivery.${req.method}`) : "—"} />
+                    <InfoRow icon={<Calendar className="w-3.5 h-3.5" />} label={t("delivery.createdAt")} value={req ? new Date(req.createdAt).toLocaleString() : "—"} />
+                  </div>
+                  {isDuty && (
+                    <div className="space-y-2.5 sm:border-l sm:border-border/60 sm:pl-4">
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1 flex items-center gap-1.5">
+                        <User className="w-3 h-3" />
+                        {t("delivery.ownerData")}
+                      </div>
+                      <InfoRow icon={<User className="w-3.5 h-3.5" />} label={t("delivery.ownerFullName")} value={req?.ownerFullName || "—"} />
+                      <InfoRow icon={<MapPin className="w-3.5 h-3.5" />} label={t("delivery.ownerAddress")} value={req?.ownerAddress || "—"} />
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })}
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
+function InfoRow({
+  icon,
+  label,
+  value,
+  mono,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  mono?: boolean;
+}) {
+  return (
+    <div className="flex items-start gap-2.5">
+      <div className="w-6 h-6 rounded-md bg-muted/60 flex items-center justify-center flex-shrink-0 mt-0.5 text-muted-foreground">
+        {icon}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{label}</div>
+        <div className={`text-sm text-foreground break-words ${mono ? "aa-mono font-semibold" : "font-medium"}`}>
+          {value}
+        </div>
+      </div>
     </div>
   );
 }

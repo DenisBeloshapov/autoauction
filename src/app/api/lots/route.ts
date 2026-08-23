@@ -45,8 +45,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Could not extract lot number from text' }, { status: 400 })
     }
     const lotNumber = match[0].replace(/[,.]/g, '')
+    // Отрезаем номер лота из rawText, чтобы он не дублировался в отображении
+    const { stripLotNumber } = await import('@/lib/utils')
+    const cleanRawText = stripLotNumber(lotText)
     const lot = await db.lot.create({
-      data: { lotNumber, rawText: lotText, comment, clientId: user.id, status: 'PENDING' },
+      data: { lotNumber, rawText: cleanRawText || lotText, comment, clientId: user.id, status: 'PENDING' },
       include: { client: { select: { id: true, username: true, name: true, role: true } } },
     })
     return NextResponse.json(lot, { status: 201 })

@@ -57,11 +57,12 @@ model Lot {
 }
 
 model WonLot {
-  id        String   @id @default(cuid())
-  lotId     String   @unique
-  price     Float?
-  currency  String   @default("JPY")
-  status    String   @default("WON")
+  id         String   @id @default(cuid())
+  lotId      String   @unique
+  price      Float?
+  currency   String   @default("JPY")
+  bodyNumber String?  // Номер кузова / описание из текста между lotNumber и price
+  status     String   @default("WON")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

@@ -1,266 +1,105 @@
-# AutoAuction
+# Изменённые файлы — обновление для GitHub
 
-Веб-приложение для управления японскими автомобильными аукционами: добавление лотов, отправка заявок на аукцион, учёт выигрышей и управление доставкой выигранных автомобилей.
+Эти файлы нужно скопировать в ваш GitHub-репозиторий, заменив существующие.
 
-**Стек:** Next.js 16 (App Router) · TypeScript 5 · Tailwind CSS v4 · shadcn/ui · Prisma 6 · PostgreSQL (продакшен) / SQLite (локально) · Framer Motion · bcrypt + JWT auth
-
----
-
-## Возможности
-
-### Для клиентов
-- **Мои лоты** — добавление лотов через вставку неструктурированного текста (номер извлекается автоматически), множественное добавление с общим комментарием, группировка лотов в комплекты по одинаковым комментариям
-- **Выигранные** — таблица выигранных лотов с ценами в JPY, выбор метода доставки (5 вариантов), для DUTY — поля ФИО и адреса владельца
-- **Доставка** — развёрнутая информация по каждому запросу: данные лота + данные получателя (для полного импорта)
-
-### Для администраторов
-- **Все лоты** — таблица всех лотов с фильтрами, чекбоксы для массового выбора, кнопка «Сформировать email» (генерирует email с группированными комментариями), кнопка «Удалить выделенные»
-- **Выигранные** — кнопка «Принять ставки» (вставка результатов торгов, парсер извлекает номер лота и цену, поддерживает точки и запятые как thousand separators — `230.000` / `230,000` / `1,500,000`)
-- **Клиенты** — список клиентов с количеством лотов, drill-down по клику показывает лоты выбранного клиента inline
-- **История email** — список отправленных партий с возможностью просмотра и копирования
-
-### Общее
-- Двуязычный интерфейс (RU/EN) с мгновенным переключением
-- Адаптивный дизайн: десктоп — боковое меню, мобильный — нижний таббар + FAB
-- Модалки выезжают снизу на мобильном (bottom sheet)
-- Пульсация статусов PENDING/DELIVERY_REQUESTED
-- Защита от зума страницы при фокусе на input (mobile)
-- Мягкие тени, плавные stagger-анимации появления карточек
-
----
-
-## Быстрый старт (локальная разработка)
-
-### Требования
-- Node.js 18+ (рекомендуется 20+)
-- npm или pnpm
-
-### Автоматическая настройка (Windows — PowerShell или cmd)
-
-В проекте есть скрипт `setup.ps1` (и `.bat`-обёртка), который выполнит всю настройку за вас: проверит Node.js, спросит DATABASE_URL, сгенерирует JWT_SECRET, создаст `.env`, установит зависимости, применит схему и заполнит БД.
-
-```bash
-# Через PowerShell (правый клик → "Открыть в PowerShell" или:
-powershell -ExecutionPolicy Bypass -File setup.ps1
-
-# Через командную строку:
-setup.bat
-```
-
-Скрипт спросит:
-1. Использовать PostgreSQL (для Vercel) или SQLite (только локально)?
-2. Если PostgreSQL — вставьте Connection string из Neon
-3. Email получателя по умолчанию (Enter = auction@company.com)
-4. Запустить dev-сервер после настройки?
-
-### Ручная установка (Linux/macOS или если не хотите скрипт)
-
-```bash
-# 1. Установить зависимости
-npm install
-
-# 2. Скопировать .env.example в .env
-cp .env.example .env
-
-# 3. Сгенерировать JWT_SECRET (минимум 32 символа)
-openssl rand -base64 32
-
-# Вставить значение в .env:
-# JWT_SECRET="ваше_сгенерированное_значение"
-
-# 4. Создать БД и применить схему (SQLite по умолчанию)
-npx prisma db push
-
-# 5. Заполнить БД тестовыми данными
-npm run db:seed
-
-# 6. Запустить dev-сервер
-npm run dev
-```
-
-Открыть http://localhost:3000
-
-### Тестовые учётные данные
-
-| Роль | Логин | Пароль |
-|------|-------|--------|
-| ADMIN | `admin` | `admin123` |
-| CLIENT | `testclient` | `client123` |
-
----
-
-## Деплой на Vercel
-
-### Шаг 1. Создать PostgreSQL-базу на Neon
-
-1. Зарегистрируйтесь на [neon.tech](https://neon.tech) (бесплатно, 0.5 ГБ)
-2. Создайте новый проект → скопируйте connection string вида:
-   ```
-   postgresql://user:password@ep-xxx.us-east-2.aws.neon.tech/autoauction?sslmode=require
-   ```
-
-### Шаг 2. Переключить Prisma на PostgreSQL
-
-```bash
-# Заменить схему на PostgreSQL-версию
-cp prisma/schema.postgres.prisma prisma/schema.prisma
-
-# Создать миграции
-npx prisma migrate dev --name init
-```
-
-### Шаг 3. Заполнить продакшен-БД
-
-```bash
-# Установить DATABASE_URL из Neon временно для seed
-export DATABASE_URL="postgresql://...@neon.tech/autoauction?sslmode=require"
-npm run db:seed
-```
-
-### Шаг 4. Деплой на Vercel
-
-**Вариант A — через Vercel CLI:**
-
-```bash
-npm i -g vercel
-vercel        # preview deploy
-vercel --prod # production deploy
-```
-
-**Вариант B — через GitHub:**
-
-1. Запушьте репозиторий на GitHub
-2. На [vercel.com](https://vercel.com) → New Project → Import из GitHub
-3. Vercel автоматически определит Next.js
-
-### Шаг 5. Настроить переменные окружения
-
-В Vercel dashboard → Settings → Environment Variables добавьте:
-
-| Variable | Value |
-|----------|-------|
-| `DATABASE_URL` | `postgresql://...@neon.tech/autoauction?sslmode=require` |
-| `JWT_SECRET` | ваш сгенерированный секрет (32+ символов) |
-| `JWT_EXPIRES_IN` | `7d` |
-| `DEFAULT_EMAIL_RECIPIENT` | `auction@company.com` |
-| `UPSTASH_REDIS_REST_URL` | (опционально) `https://xxx.upstash.io` |
-| `UPSTASH_REDIS_REST_TOKEN` | (опционально) `axxxxx` |
-
-После изменения переменных выполните **Redeploy**.
-
----
-
-## Безопасность
-
-| Механизм | Реализация |
-|----------|------------|
-| Хеширование паролей | **bcrypt** (cost factor 12, per-user salt) |
-| Сессионные токены | **JWT** с подписью HS256, expiry 7 дней |
-| Rate limiting | 10 попыток входа в минуту на IP (Upstash Redis в проде, in-memory локально) |
-| RBAC | role-based access control (ADMIN/CLIENT) на всех mutation-эндпоинтах |
-| Валидация входных данных | на всех API-маршрутах |
-| Защита от удаления чужих лотов | клиенты видят и удаляют только свои лоты |
-
-### Рекомендации для продакшена
-- Использовать HTTPS (Vercel предоставляет автоматически)
-- Регулярно делать backup БД (Neon имеет встроенный backup)
-- Ротировать `JWT_SECRET` при компрометации
-- Настроить мониторинг ошибок (Sentry, Vercel Analytics)
-
----
-
-## Структура проекта
+## Список изменённых файлов
 
 ```
-autoauction/
+changed-files/
+├── package.json                                              ← обновлён build script
 ├── prisma/
-│   ├── schema.prisma            # SQLite-схема (локальная разработка)
-│   └── schema.postgres.prisma   # PostgreSQL-схема (Vercel/Neon)
-├── scripts/
-│   └── seed-admin.ts            # Создаёт admin + testclient
-├── setup.ps1                    # Скрипт настройки (PowerShell, Windows)
-├── setup.bat                    # Обёртка для запуска из cmd
+│   ├── schema.prisma                                        ← добавлено поле bodyNumber
+│   ├── schema.postgres.prisma                               ← добавлено поле bodyNumber
+│   └── migrations/
+│       └── 20260823000000_add_body_number/
+│           └── migration.sql                                ← НОВАЯ миграция
 ├── src/
-│   ├── app/
-│   │   ├── api/
-│   │   │   ├── auth/
-│   │   │   │   ├── login/route.ts     # POST /api/auth/login
-│   │   │   │   ├── verify/route.ts    # GET /api/auth/verify
-│   │   │   │   └── register/route.ts  # POST /api/auth/register (ADMIN)
-│   │   │   ├── lots/route.ts          # GET/POST/PUT/DELETE /api/lots
-│   │   │   ├── won-lots/route.ts      # GET/POST /api/won-lots
-│   │   │   ├── delivery/route.ts      # GET/POST /api/delivery
-│   │   │   ├── email/route.ts         # GET/POST /api/email
-│   │   │   ├── users/route.ts         # GET/POST /api/users (ADMIN)
-│   │   │   └── route.ts               # GET /api (health check)
-│   │   ├── layout.tsx                 # Корневой layout + viewport meta
-│   │   ├── page.tsx                   # Диспетчер на основе роли
-│   │   └── globals.css                # Дизайн-система
+│   ├── app/api/
+│   │   ├── debug/route.ts                                   ← без изменений (диагностика)
+│   │   ├── email/route.ts                                  ← отрезает номер из rawText
+│   │   ├── lots/route.ts                                   ← отрезает номер из rawText при создании
+│   │   └── won-lots/route.ts                                ← извлекает bodyNumber при ставках
 │   ├── components/aa/
-│   │   ├── AdminPanel.tsx             # Панель администратора
-│   │   ├── ClientPanel.tsx            # Панель клиента
-│   │   ├── AppShell.tsx               # Sidebar + bottom tabbar + FAB
-│   │   ├── LoginPage.tsx              # Экран входа
-│   │   ├── Modal.tsx                  # Bottom-sheet модалки
-│   │   ├── StatusBadge.tsx            # Badge с пульсацией
-│   │   └── LanguageToggle.tsx         # Переключатель RU/EN
+│   │   ├── AdminPanel.tsx                                  ← комплекты + таб Доставка + поиск
+│   │   └── ClientPanel.tsx                                 ← отрезает номер из rawText
 │   ├── contexts/
-│   │   ├── AuthContext.tsx            # Auth state + login/logout
-│   │   ├── LanguageContext.tsx        # i18n (130+ ключей RU/EN)
-│   │   └── Providers.tsx              # Обёртка провайдеров
+│   │   └── LanguageContext.tsx                              ← новые i18n ключи
 │   └── lib/
-│       ├── db.ts                      # Prisma client
-│       ├── auth.ts                    # bcrypt + JWT
-│       ├── session.ts                 # getAuthUser
-│       ├── ratelimit.ts               # Upstash Redis rate limiter
-│       └── utils.ts                   # cn() helper
-├── .env.example                       # Шаблон переменных окружения
-├── .gitignore
-├── package.json
-├── tsconfig.json
-├── next.config.ts
-├── tailwind.config.ts
-└── README.md
+│       └── utils.ts                                        ← функции stripLotNumber, parseSearchTerms
 ```
 
----
+## Как обновить
 
-## API
+### Вариант 1: Через git (рекомендуется)
 
-| Method | Endpoint | Описание | Доступ |
-|--------|----------|----------|--------|
-| POST | `/api/auth/login` | Вход, возвращает JWT | Public |
-| GET | `/api/auth/verify` | Проверка токена | Authenticated |
-| POST | `/api/auth/register` | Регистрация клиента | ADMIN |
-| GET | `/api/lots` | Список лотов (с фильтрами) | Authenticated |
-| POST | `/api/lots` | Создать лот (извлекает номер) | CLIENT |
-| PUT | `/api/lots` | Массовое обновление статусов | ADMIN |
-| DELETE | `/api/lots?id=<lotId>` | Удалить лот (любой статус) | Authenticated |
-| GET | `/api/won-lots` | Список выигранных лотов | Authenticated |
-| POST | `/api/won-lots` | Принять ставки (парсер) | ADMIN |
-| GET | `/api/delivery` | Запросы доставки | Authenticated |
-| POST | `/api/delivery` | Создать/обновить доставку | Authenticated |
-| GET | `/api/email` | История email-партий | Authenticated |
-| POST | `/api/email` | Сформировать email | ADMIN |
-| GET | `/api/users` | Список пользователей | ADMIN |
-| POST | `/api/users` | Создать пользователя | ADMIN |
+```bash
+# В папке вашего локального проекта
+# Скопируйте файлы из changed-files/ в корень проекта с заменой
 
----
+# Linux/macOS:
+cp -r changed-files/* .
 
-## Лицензия
+# Windows (PowerShell):
+Copy-Item -Path changed-files\* -Destination . -Recurse -Force
 
-MIT — свободно используйте, изменяйте и распространяйте.
+# Закоммитить и запушить
+git add -A
+git commit -m "UI: kits for admin, delivery tab with search, strip lot number from rawText"
+git push
+```
 
----
+### Вариант 2: Вручную через GitHub web-интерфейс
 
-## Развитие
+Зайдите в репозиторий на GitHub и загрузите каждый файл через "Upload files", сохраняя структуру папок.
 
-Возможные улучшения:
-- WebSocket для real-time обновления лотов
-- Скачивание email-партий в `.eml` формате
-- Прикрепление реального SMTP-отправщика
-- Дашборд со статистикой выигрышей
-- Экспорт лотов в Excel/CSV
-- Поиск по всем лотам с пагинацией
-- Двухфакторная аутентификация для админа
-- Аудит-лог критических действий
+## Что нового
+
+### 1. Комплекты у админа в «Все лоты»
+- Лоты с одинаковым комментарием одного клиента группируются в комплект
+- Заголовок комплекта: «📦 Комплект · Имя клиента · 💬 комментарий · N лотов»
+- Лоты без комментария показываются отдельно
+
+### 2. Убран номер лота из «Оригинального текста»
+- При создании лота номер автоматически отрезается из rawText
+- Везде в отображении (таблицы, карточки, email) номер не дублируется
+- Пример: было «12345 Toyota Camry 2023 White» → стало «Toyota Camry 2023 White»
+
+### 3. Новый таб «Доставка» у админа
+- Показывает все доставки всех клиентов (как у клиента, но для всех)
+- Поле поиска поддерживает несколько номеров кузова/лота
+- Разделители: запятая, пробел, перенос строки, точка с запятой
+- Пример: «Toyota, Honda, 12345» найдёт все лоты где есть любое из этих слов
+
+### 4. bodyNumber (номер кузова) при принятии ставок
+- При «Принять ставки» парсер извлекает:
+  - lotNumber (первое число)
+  - price (последнее число)
+  - bodyNumber (текст между ними — номер кузова)
+- Пример: «12345 HONDA PRELUDE white 500000»
+  → lotNumber=12345, price=500000, bodyNumber="HONDA PRELUDE white"
+- bodyNumber сохраняется в БД и используется для поиска в «Доставка»
+- В предпросмотре ставок добавлена колонка «Номер кузова»
+
+### 5. Раздел «Выигранные» у админа
+- Колонка «Оригинальный текст» заменена на «Номер кузова» (bodyNumber)
+- Если bodyNumber пустой — показывается отрезанный rawText
+
+## Миграция БД (автоматически)
+
+Файл `prisma/migrations/20260823000000_add_body_number/migration.sql` добавит колонку `bodyNumber` в таблицу `WonLot`. Миграция применяется автоматически при деплое на Vercel (через `prisma migrate deploy` в build script).
+
+Для локальной разработки выполните:
+```bash
+npx prisma migrate dev --name add_body_number
+# или
+npx prisma db push
+```
+
+## После обновления
+
+1. Запушьте изменения на GitHub
+2. Vercel автоматически задеплоит (1-2 минуты)
+3. Проверьте:
+   - Зайдите как admin → «Все лоты» → увидите комплекты
+   - Зайдите как admin → «Доставка» → попробуйте поиск
+   - Зайдите как admin → «Принять ставки» → вставьте «12345 HONDA PRELUDE white 500000» → увидите bodyNumber в предпросмотре

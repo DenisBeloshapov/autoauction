@@ -25,6 +25,7 @@ import { AppShell, type Tab } from "./AppShell";
 import { Modal } from "./Modal";
 import { StatusBadge } from "./StatusBadge";
 import { toast } from "sonner";
+import { stripLotNumber } from "@/lib/utils";
 
 type Lot = {
   id: string;
@@ -269,7 +270,7 @@ export function ClientPanel() {
                       return (
                         <motion.tr key={wl.id} variants={itemVariants} className="border-t border-border/60 hover:bg-muted/30 transition">
                           <td className="px-4 py-3 aa-mono font-bold text-primary">#{wl.lot.lotNumber}</td>
-                          <td className="px-4 py-3 text-muted-foreground max-w-xs truncate hidden sm:table-cell">{wl.lot.rawText || "—"}</td>
+                          <td className="px-4 py-3 text-muted-foreground max-w-xs truncate hidden sm:table-cell">{stripLotNumber(wl.lot.rawText) || "—"}</td>
                           <td className="px-4 py-3 text-right aa-mono font-semibold">
                             {wl.price ? wl.price.toLocaleString() : "—"}{" "}
                             <span className="text-xs text-muted-foreground">{t("wonLots.currency")}</span>
@@ -345,7 +346,7 @@ export function ClientPanel() {
                         {wl.lot.rawText && (
                           <div className="pt-2 mt-1 border-t border-border/60">
                             <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">{t("delivery.rawText")}</div>
-                            <p className="text-xs text-foreground/80 break-words">{wl.lot.rawText}</p>
+                            <p className="text-xs text-foreground/80 break-words">{stripLotNumber(wl.lot.rawText)}</p>
                           </div>
                         )}
                       </div>
@@ -592,7 +593,7 @@ function MyLotsGrouped({
                     </div>
                     <StatusBadge status={lot.status} label={t(`status.${lot.status}`)} />
                   </div>
-                  {lot.rawText && <p className="text-sm text-foreground mb-2 break-words">{lot.rawText}</p>}
+                  {lot.rawText && <p className="text-sm text-foreground mb-2 break-words">{stripLotNumber(lot.rawText)}</p>}
                   {!isKit && lot.comment && (
                     <p className="text-xs text-muted-foreground italic bg-muted/40 rounded-lg px-2.5 py-1.5">💬 {lot.comment}</p>
                   )}

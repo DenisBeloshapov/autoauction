@@ -51,7 +51,10 @@ export async function POST(req: Request) {
       }
     })
 
-    const lotsBlock: string[] = lots.map((l, i) => `${i + 1}. Лот #${l.lotNumber} — ${l.rawText || '(нет описания)'}`)
+    const { stripLotNumber } = await import('@/lib/utils')
+    const lotsBlock: string[] = lots.map(
+      (l, i) => `${i + 1}. Лот #${l.lotNumber} — ${stripLotNumber(l.rawText) || '(нет описания)'}`
+    )
 
     const body_text = [
       `Тема: ${subject}`,
