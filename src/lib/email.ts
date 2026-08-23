@@ -1,5 +1,4 @@
 import { db } from './db'
-import nodemailer from 'nodemailer'
 
 interface SmtpConfig {
   host: string
@@ -11,31 +10,37 @@ interface SmtpConfig {
 
 /**
  * Читает SMTP-настройки из таблицы Setting.
- * Возвращает null, если SMTP не настроен.
+ * Возвращает null, если SMTP не настроен или таблица Setting недоступна.
  */
 export async function getSmtpConfig(): Promise<SmtpConfig | null> {
-  const keys = ['smtpHost', 'smtpPort', 'smtpUser', 'smtpPassword', 'smtpFrom']
-  const settings = await db.setting.findMany({ where: { key: { in: keys } } })
+  try {
+    if (!db.setting) return null
 
-  const get = (key: string): string | null => {
-    const s = settings.find((s) => s.key === key)
-    return s?.value || null
-  }
+    const keys = ['smtpHost', 'smtpPort', 'smtpUser', 'smtpPassword', 'smtpFrom']
+    const settings = await db.setting.findMany({ where: { key: { in: keys } } })
 
-  const host = get('smtpHost')
-  const port = get('smtpPort')
-  const user = get('smtpUser')
-  const password = get('smtpPassword')
-  const from = get('smtpFrom')
+    const get = (key: string): string | null => {
+      const s = settings.find((s) => s.key === key)
+      return s?.value || null
+    }
 
-  if (!host || !user || !password) return null
+    const host = get('smtpHost')
+    const port = get('smtpPort')
+    const user = get('smtpUser')
+    const password = get('smtpPassword')
+    const from = get('smtpFrom')
 
-  return {
-    host,
-    port: parseInt(port || '587', 10),
-    user,
-    password,
-    from: from || user,
+    if (!host || !user || !password) return null
+
+    return {
+      host,
+      port: parseInt(port || '587', 10),
+      user,
+      password,
+      from: from || user,
+    }
+  } catch {
+    return null
   }
 }
 
@@ -54,6 +59,7 @@ export async function sendEmailViaSmtp(
   }
 
   try {
+    const nodemailer = await import('nodemailer')
     const transporter = nodemailer.createTransport({
       host: config.host,
       port: config.port,
@@ -81,8 +87,16 @@ export async function sendEmailViaSmtp(
 /**
  * Читает email получателя из таблицы Setting.
  * Fallback на env DEFAULT_EMAIL_RECIPIENT.
+ * Не падает если таблица Setting недоступна.
  */
 export async function getRecipientEmail(): Promise<string> {
-  const s = await db.setting.findUnique({ where: { key: 'emailRecipient' } })
-  return s?.value || process.env.DEFAULT_EMAIL_RECIPIENT || 'auction@company.com'
+  try {
+    if (!db.setting) {
+      return process.env.DEFAULT_EMAIL_RECIPIENT || 'auction@company.com'
+    }
+    const s = await db.setting.findUnique({ where: { key: 'emailRecipient' } })
+    return s?.value || process.env.DEFAULT_EMAIL_RECIPIENT || 'auction@company.com'
+  } catch {
+    return process.env.DEFAULT_EMAIL_RECIPIENT || 'auction@company.com'
+  }
 }

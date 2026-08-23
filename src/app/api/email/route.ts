@@ -115,19 +115,34 @@ export async function POST(req: Request) {
     })
 
     // Пытаемся отправить через SMTP, если настроен
-    const { sendEmailViaSmtp, getRecipientEmail } = await import('@/lib/email')
-    const { emitRealtime, REALTIME_EVENTS } = await import('@/lib/realtime')
-    const actualRecipient = await getRecipientEmail()
-    const smtpResult = await sendEmailViaSmtp(actualRecipient, subject, body_text)
+    let smtpSent = false
+    let smtpError: string | undefined
+    let actualRecipient = recipientEmail
 
-    // Emit WebSocket event
-    emitRealtime({ event: REALTIME_EVENTS.EMAIL_SENT, data: { batchId: batch.id, smtpSent: smtpResult.sent } })
+    try {
+      const { sendEmailViaSmtp, getRecipientEmail } = await import('@/lib/email')
+      actualRecipient = await getRecipientEmail()
+      const smtpResult = await sendEmailViaSmtp(actualRecipient, subject, body_text)
+      smtpSent = smtpResult.sent
+      smtpError = smtpResult.error
+    } catch (smtpErr) {
+      // SMTP не настроен или ошибка — не блокируем ответ
+      smtpError = smtpErr instanceof Error ? smtpErr.message : 'SMTP error'
+    }
+
+    // Emit WebSocket event (не блокируем при ошибке)
+    try {
+      const { emitRealtime, REALTIME_EVENTS } = await import('@/lib/realtime')
+      emitRealtime({ event: REALTIME_EVENTS.EMAIL_SENT, data: { batchId: batch.id, smtpSent } })
+    } catch {
+      // WS недоступен — игнорируем
+    }
 
     return NextResponse.json({
       success: true,
       emailBatchId: batch.id,
-      smtpSent: smtpResult.sent,
-      smtpError: smtpResult.error,
+      smtpSent,
+      smtpError,
       preview: {
         subject,
         recipientEmail: actualRecipient,
@@ -136,6 +151,11 @@ export async function POST(req: Request) {
       },
     })
   } catch (e) {
-    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+    console.error('[email] FATAL:', e)
+    const message = e instanceof Error ? e.message : String(e)
+    return NextResponse.json(
+      { error: 'Server error', detail: message },
+      { status: 500 }
+    )
   }
 }

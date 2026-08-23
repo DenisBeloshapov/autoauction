@@ -2,14 +2,13 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getAuthUser } from '@/lib/session'
 
-// Все ключи настроек, которые мы используем
 const SETTING_KEYS = [
-  'emailRecipient',    // Куда отправлять список лотов
-  'smtpHost',          // SMTP сервер (например smtp.gmail.com)
-  'smtpPort',          // SMTP порт (465, 587)
-  'smtpUser',          // Логин SMTP (email отправителя)
-  'smtpPassword',      // Пароль SMTP
-  'smtpFrom',          // От кого отправлять (имя + email)
+  'emailRecipient',
+  'smtpHost',
+  'smtpPort',
+  'smtpUser',
+  'smtpPassword',
+  'smtpFrom',
 ] as const
 
 export async function GET(req: Request) {
@@ -18,21 +17,42 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const settings = await db.setting.findMany({
-    where: { key: { in: SETTING_KEYS as readonly string[] } },
-  })
+  try {
+    // Проверяем, что db.setting существует (Prisma client сгенерирован с моделью Setting)
+    if (!db.setting) {
+      console.error('[settings] db.setting is undefined — Prisma client not generated with Setting model')
+      return NextResponse.json(
+        {
+          error: 'Setting model not found in Prisma client',
+          detail: 'Run: npx prisma generate (locally) or check that schema.prisma contains model Setting',
+          dbKeys: Object.keys(db).filter(k => !k.startsWith('_')).slice(0, 20),
+        },
+        { status: 500 }
+      )
+    }
 
-  const result: Record<string, string | null> = {}
-  for (const key of SETTING_KEYS) {
-    const s = settings.find((s) => s.key === key)
-    result[key] = s?.value || null
+    const settings = await db.setting.findMany({
+      where: { key: { in: SETTING_KEYS as readonly string[] } },
+    })
+
+    const result: Record<string, string | null> = {}
+    for (const key of SETTING_KEYS) {
+      const s = settings.find((s) => s.key === key)
+      result[key] = s?.value || null
+    }
+
+    result.smtpPasswordConfigured = !!result.smtpPassword
+    delete result.smtpPassword
+
+    return NextResponse.json({ settings: result })
+  } catch (err) {
+    console.error('[settings] FATAL:', err)
+    const message = err instanceof Error ? err.message : String(err)
+    return NextResponse.json(
+      { error: 'Server error', detail: message },
+      { status: 500 }
+    )
   }
-
-  // smtpPassword возвращаем как boolean (настроен/нет), не сам пароль
-  result.smtpPasswordConfigured = !!result.smtpPassword
-  delete result.smtpPassword
-
-  return NextResponse.json({ settings: result })
 }
 
 export async function PUT(req: Request) {
@@ -42,6 +62,13 @@ export async function PUT(req: Request) {
   }
 
   try {
+    if (!db.setting) {
+      return NextResponse.json(
+        { error: 'Setting model not found in Prisma client' },
+        { status: 500 }
+      )
+    }
+
     const body = await req.json()
     const updates: { key: string; value: string }[] = []
 
@@ -51,13 +78,11 @@ export async function PUT(req: Request) {
         if (typeof val === 'string' && val.trim()) {
           updates.push({ key, value: val.trim() })
         } else if (val === '' || val === null) {
-          // Очищаем настройку
           updates.push({ key, value: '' })
         }
       }
     }
 
-    // upsert каждого изменённого ключа
     for (const { key, value } of updates) {
       const existing = await db.setting.findUnique({ where: { key } })
       if (existing) {
@@ -68,7 +93,12 @@ export async function PUT(req: Request) {
     }
 
     return NextResponse.json({ success: true, updated: updates.length })
-  } catch {
-    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+  } catch (err) {
+    console.error('[settings PUT] FATAL:', err)
+    const message = err instanceof Error ? err.message : String(err)
+    return NextResponse.json(
+      { error: 'Server error', detail: message },
+      { status: 500 }
+    )
   }
 }
