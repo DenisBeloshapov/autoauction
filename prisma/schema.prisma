@@ -52,6 +52,7 @@ model WonLot {
   price    Float?
   currency String  @default("JPY")
   status   String  @default("WON") // WON | DELIVERY_REQUESTED | DELIVERY_CONFIRMED | COMPLETED
+  bodyNumber String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

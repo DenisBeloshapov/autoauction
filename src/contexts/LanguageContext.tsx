@@ -97,6 +97,8 @@ const translations: Record<Language, Record<string, string>> = {
     "delivery.searchPlaceholder": "Поиск по номеру лота, клиенту...",
     "delivery.found": "Найдено",
     "delivery.noSearchResults": "По вашему запросу ничего не найдено",
+    "delivery.confirm": "Подтвердить",
+    "delivery.complete": "Завершить",
 
     // email (8)
     "email.sendSelected": "Отправить selected",
@@ -176,6 +178,7 @@ const translations: Record<Language, Record<string, string>> = {
     "wonLots.notFound": "не найден",
     "wonLots.empty": "Введите результаты торгов для предпросмотра",
     "wonLots.confirmSave": "Подтвердить и сохранить",
+    "wonLots.nothingToSave": "Нет ни одного совпавшего лота — нечего сохранять",
     "wonLots.bodyNumber": "Номер кузова",
   },
   en: {
@@ -267,6 +270,8 @@ const translations: Record<Language, Record<string, string>> = {
     "delivery.searchPlaceholder": "Search by lot number, client...",
     "delivery.found": "Found",
     "delivery.noSearchResults": "No results found",
+    "delivery.confirm": "Confirm",
+    "delivery.complete": "Complete",
 
     // email (8)
     "email.sendSelected": "Send selected",
@@ -345,6 +350,7 @@ const translations: Record<Language, Record<string, string>> = {
     "wonLots.notFound": "not found",
     "wonLots.empty": "Paste auction results to see preview",
     "wonLots.confirmSave": "Confirm and save",
+    "wonLots.nothingToSave": "No matched lots — nothing to save",
     "wonLots.bodyNumber": "Body number",
   },
 };

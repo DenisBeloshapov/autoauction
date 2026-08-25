@@ -31,6 +31,31 @@ export async function GET(req: Request) {
   return NextResponse.json({ requests })
 }
 
+export async function PATCH(req: Request) {
+  const user = await getAuthUser(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (user.role !== 'ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
+  try {
+    const body = await req.json()
+    const wonLotId = String(body.wonLotId || '')
+    const status = String(body.status || '')
+    const allowed = ['DELIVERY_REQUESTED', 'DELIVERY_CONFIRMED', 'COMPLETED']
+    if (!wonLotId || !allowed.includes(status)) {
+      return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
+    }
+
+    const wonLot = await db.wonLot.update({
+      where: { id: wonLotId },
+      data: { status },
+    })
+
+    return NextResponse.json({ wonLot })
+  } catch (e) {
+    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+  }
+}
+
 export async function POST(req: Request) {
   const user = await getAuthUser(req)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

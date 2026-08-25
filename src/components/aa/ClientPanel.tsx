@@ -27,6 +27,7 @@ import { Modal } from "./Modal";
 import { StatusBadge } from "./StatusBadge";
 import { toast } from "sonner";
 import { useRealtime } from "@/hooks/use-realtime";
+import { useConfirm } from "./ConfirmDialog";
 
 type Lot = {
   id: string;
@@ -112,14 +113,18 @@ export function ClientPanel() {
   const [deliveryMethod, setDeliveryMethod] = useState<Method>("DUTY");
   const [ownerFullName, setOwnerFullName] = useState("");
   const [ownerAddress, setOwnerAddress] = useState("");
+  const [deliverySubmitting, setDeliverySubmitting] = useState(false);
+  const [deliveryErrors, setDeliveryErrors] = useState<{ ownerFullName?: boolean; ownerAddress?: boolean }>({});
+
+  const { confirm, dialog: confirmDialog } = useConfirm();
 
   const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
   const authHeaders: HeadersInit = token
     ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
     : { "Content-Type": "application/json" };
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const [lotsRes, wonRes] = await Promise.all([
         fetch("/api/lots", { headers: authHeaders }),
@@ -134,7 +139,7 @@ export function ClientPanel() {
         setWonLots(data.wonLots || []);
       }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [token]);
 
@@ -142,9 +147,9 @@ export function ClientPanel() {
     void loadData();
   }, [loadData]);
 
-  // Realtime: обновляем данные при WS-событиях
+  // Realtime: обновляем данные при WS-событиях — тихо, без полноэкранного спиннера
   useRealtime(["lot:created", "lot:updated", "lot:deleted", "wonlot:created", "delivery:created"], () => {
-    loadData();
+    loadData(true);
   });
 
   const tabs: Tab[] = [
@@ -216,26 +221,33 @@ export function ClientPanel() {
   };
 
   const deleteLot = async (id: string) => {
-    if (!confirm(t("lots.deleteConfirm"))) return;
+    if (!(await confirm(t("lots.deleteConfirm"), { danger: true, confirmLabel: t("common.delete") }))) return;
+    const snapshot = lots;
+    setLots((prev) => prev.filter((l) => l.id !== id));
     const res = await fetch(`/api/lots?id=${id}`, {
       method: "DELETE",
       headers: authHeaders,
     });
     if (res.ok) {
       toast.success(t("common.success"));
-      await loadData();
+      loadData(true);
     } else {
+      setLots(snapshot);
       const data = await res.json().catch(() => ({}));
       toast.error(data.error || t("common.error"));
     }
   };
 
   const submitDelivery = async () => {
-    if (!deliveryWonLot) return;
-    if (deliveryMethod === "DUTY" && (!ownerFullName || !ownerAddress)) {
-      toast.error(t("delivery.ownerFullName") + " / " + t("delivery.ownerAddress"));
-      return;
+    if (!deliveryWonLot || deliverySubmitting) return;
+    if (deliveryMethod === "DUTY") {
+      const errors = { ownerFullName: !ownerFullName.trim(), ownerAddress: !ownerAddress.trim() };
+      if (errors.ownerFullName || errors.ownerAddress) {
+        setDeliveryErrors(errors);
+        return;
+      }
     }
+    setDeliverySubmitting(true);
     const res = await fetch("/api/delivery", {
       method: "POST",
       headers: authHeaders,
@@ -246,12 +258,14 @@ export function ClientPanel() {
         ownerAddress: deliveryMethod === "DUTY" ? ownerAddress : null,
       }),
     });
+    setDeliverySubmitting(false);
     if (res.ok) {
       toast.success(t("common.success"));
       setDeliveryWonLot(null);
       setOwnerFullName("");
       setOwnerAddress("");
-      await loadData();
+      setDeliveryErrors({});
+      loadData(true);
     } else {
       const data = await res.json().catch(() => ({}));
       toast.error(data.error || t("common.error"));
@@ -342,15 +356,12 @@ export function ClientPanel() {
                             {wl.lot.rawText || "—"}
                           </td>
                           <td className="px-4 py-3 text-right aa-mono font-semibold">
-                            {wl.price ? wl.price.toLocaleString() : "—"}{" "}
+                            {wl.price != null ? wl.price.toLocaleString() : "—"}{" "}
                             <span className="text-xs text-muted-foreground">{t("wonLots.currency")}</span>
                           </td>
                           <td className="px-4 py-3">
                             {hasDelivery ? (
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#EDF3EC] text-[#346538] border border-[#D8E6D6] text-xs font-semibold">
-                                <Check className="w-3.5 h-3.5" />
-                                {t("delivery.choosen")}
-                              </span>
+                              <StatusBadge status={wl.status} label={t(`wonStatus.${wl.status}`)} pulse={wl.status === "DELIVERY_REQUESTED"} />
                             ) : (
                               <button
                                 onClick={() => {
@@ -358,6 +369,7 @@ export function ClientPanel() {
                                   setDeliveryMethod("DUTY");
                                   setOwnerFullName("");
                                   setOwnerAddress("");
+                                  setDeliveryErrors({});
                                 }}
                                 className="text-xs h-8 px-3 rounded-lg border border-border hover:bg-muted hover:border-primary/40 font-medium flex items-center gap-1 transition"
                               >
@@ -401,7 +413,7 @@ export function ClientPanel() {
                     <div className="flex items-start justify-between p-5 pb-4 gap-3">
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="w-11 h-11 rounded-md bg-foreground flex items-center justify-center flex-shrink-0">
-                          <Truck className="w-5 h-5 text-white" />
+                          <Truck className="w-5 h-5 text-background" />
                         </div>
                         <div className="min-w-0">
                           <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
@@ -412,10 +424,7 @@ export function ClientPanel() {
                           </div>
                         </div>
                       </div>
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#EDF3EC] text-[#346538] border border-[#D8E6D6] text-xs font-semibold flex-shrink-0">
-                        <Check className="w-3.5 h-3.5" />
-                        {t("delivery.choosen")}
-                      </span>
+                      <StatusBadge status={wl.status} label={t(`wonStatus.${wl.status}`)} pulse={wl.status === "DELIVERY_REQUESTED"} />
                     </div>
 
                     {/* Body */}
@@ -427,7 +436,7 @@ export function ClientPanel() {
                           {t("delivery.lotInfo")}
                         </div>
                         <InfoRow icon={<Hash className="w-3.5 h-3.5" />} label={t("delivery.lotNumber")} value={`#${wl.lot.lotNumber}`} mono />
-                        <InfoRow icon={<Coins className="w-3.5 h-3.5" />} label={t("delivery.price")} value={wl.price ? `${wl.price.toLocaleString()} ${t("wonLots.currency")}` : "—"} mono />
+                        <InfoRow icon={<Coins className="w-3.5 h-3.5" />} label={t("delivery.price")} value={wl.price != null ? `${wl.price.toLocaleString()} ${t("wonLots.currency")}` : "—"} mono />
                         <InfoRow icon={<Truck className="w-3.5 h-3.5" />} label={t("delivery.method")} value={req?.method ? t(`delivery.${req.method}`) : "—"} />
                         <InfoRow icon={<Calendar className="w-3.5 h-3.5" />} label={t("delivery.createdAt")} value={req ? new Date(req.createdAt).toLocaleString() : "—"} />
                         {wl.lot.rawText && (
@@ -565,21 +574,23 @@ export function ClientPanel() {
       {/* Delivery Modal */}
       <Modal
         open={!!deliveryWonLot}
-        onClose={() => setDeliveryWonLot(null)}
+        onClose={() => { setDeliveryWonLot(null); setDeliveryErrors({}); }}
         title={t("delivery.chooseMethod")}
         size="md"
         footer={
           <>
             <button
-              onClick={() => setDeliveryWonLot(null)}
+              onClick={() => { setDeliveryWonLot(null); setDeliveryErrors({}); }}
               className="h-10 px-4 rounded-md border border-border hover:bg-muted text-sm font-medium transition"
             >
               {t("common.cancel")}
             </button>
             <button
               onClick={submitDelivery}
-              className="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-semibold transition-colors hover:bg-primary/90"
+              disabled={deliverySubmitting}
+              className="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-semibold transition-colors hover:bg-primary/90 disabled:opacity-60 flex items-center gap-1.5"
             >
+              {deliverySubmitting && <CircleNotch className="w-4 h-4 animate-spin" weight="bold" />}
               {t("common.save")}
             </button>
           </>
@@ -602,7 +613,7 @@ export function ClientPanel() {
               {METHODS.map((m) => (
                 <button
                   key={m}
-                  onClick={() => setDeliveryMethod(m)}
+                  onClick={() => { setDeliveryMethod(m); setDeliveryErrors({}); }}
                   className={`text-left p-3 rounded-md border text-sm font-medium transition ${
                     deliveryMethod === m
                       ? "border-primary bg-accent text-accent-foreground shadow-sm"
@@ -627,9 +638,13 @@ export function ClientPanel() {
                 <input
                   type="text"
                   value={ownerFullName}
-                  onChange={(e) => setOwnerFullName(e.target.value)}
+                  onChange={(e) => { setOwnerFullName(e.target.value); if (deliveryErrors.ownerFullName) setDeliveryErrors((p) => ({ ...p, ownerFullName: false })); }}
                   placeholder={t("delivery.ownerFullNamePlaceholder")}
-                  className="w-full h-11 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30 focus:border-foreground/30 transition-colors"
+                  className={`w-full h-11 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-1 transition-colors ${
+                    deliveryErrors.ownerFullName
+                      ? "border-destructive focus:ring-destructive/30 focus:border-destructive"
+                      : "border-input focus:ring-foreground/30 focus:border-foreground/30"
+                  }`}
                 />
               </div>
               <div className="space-y-1.5">
@@ -639,15 +654,21 @@ export function ClientPanel() {
                 <input
                   type="text"
                   value={ownerAddress}
-                  onChange={(e) => setOwnerAddress(e.target.value)}
+                  onChange={(e) => { setOwnerAddress(e.target.value); if (deliveryErrors.ownerAddress) setDeliveryErrors((p) => ({ ...p, ownerAddress: false })); }}
                   placeholder={t("delivery.ownerAddressPlaceholder")}
-                  className="w-full h-11 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30 focus:border-foreground/30 transition-colors"
+                  className={`w-full h-11 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-1 transition-colors ${
+                    deliveryErrors.ownerAddress
+                      ? "border-destructive focus:ring-destructive/30 focus:border-destructive"
+                      : "border-input focus:ring-foreground/30 focus:border-foreground/30"
+                  }`}
                 />
               </div>
             </motion.div>
           )}
         </div>
       </Modal>
+
+      {confirmDialog}
     </AppShell>
   );
 }
@@ -699,6 +720,12 @@ function MyLotsGrouped({
     for (const lot of individual) {
       out.push({ key: `single:${lot.id}`, comment: null, lots: [lot] });
     }
+    // Sort by each group's most recent lot — kits and individual lots interleave by true recency
+    out.sort((a, b) => {
+      const aMax = Math.max(...a.lots.map((l) => new Date(l.createdAt).getTime()));
+      const bMax = Math.max(...b.lots.map((l) => new Date(l.createdAt).getTime()));
+      return bMax - aMax;
+    });
     return out;
   })();
 

@@ -44,13 +44,14 @@ export async function POST(req: Request) {
     // 1) { winnings: [{ lotNumber, price }, ...] }
     // 2) { text: "12345 Toyota ... 500000\n..." }
 
-    let entries: { lotNumber: string; price: string | number }[] = []
+    let entries: { lotNumber: string; price: string | number; bodyNumber?: string | null }[] = []
 
     if (Array.isArray(body.winnings)) {
       entries = body.winnings.map(
-        (w: { lotNumber: string; price: string | number }) => ({
+        (w: { lotNumber: string; price: string | number; bodyNumber?: string | null }) => ({
           lotNumber: String(w.lotNumber),
           price: w.price,
+          bodyNumber: w.bodyNumber ?? null,
         })
       )
     } else if (typeof body.text === 'string') {
@@ -103,7 +104,10 @@ export async function POST(req: Request) {
       if (existing) {
         await db.wonLot.update({
           where: { id: existing.id },
-          data: { price: safePrice ?? undefined },
+          data: {
+            price: safePrice ?? undefined,
+            ...(entry.bodyNumber ? { bodyNumber: entry.bodyNumber } : {}),
+          },
         })
         results.push({
           lotNumber: entry.lotNumber,
@@ -117,6 +121,7 @@ export async function POST(req: Request) {
             price: safePrice,
             currency: 'JPY',
             status: 'WON',
+            bodyNumber: entry.bodyNumber || null,
           },
         })
         await db.lot.update({

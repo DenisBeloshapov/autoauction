@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Stack,
   Users,
@@ -27,6 +27,7 @@ import {
   MagnifyingGlass,
 } from "@phosphor-icons/react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useConfirm } from "./ConfirmDialog";
 import { AppShell, type Tab } from "./AppShell";
 import { Modal } from "./Modal";
 import { StatusBadge } from "./StatusBadge";
@@ -131,6 +132,7 @@ export function AdminPanel() {
   const [emailPreview, setEmailPreview] = useState<{ body: string; subject: string; recipientEmail: string } | null>(null);
   const [wonInput, setWonInput] = useState("");
   const [showWonModal, setShowWonModal] = useState(false);
+  const [wonSubmitting, setWonSubmitting] = useState(false);
   const [viewBatch, setViewBatch] = useState<EmailBatch | null>(null);
   const [showAddClient, setShowAddClient] = useState(false);
   const [newClient, setNewClient] = useState({ username: "", password: "", name: "" });
@@ -138,6 +140,8 @@ export function AdminPanel() {
   const [drilledClientId, setDrilledClientId] = useState<string | null>(null);
   const [clientLotsCache, setClientLotsCache] = useState<Record<string, Lot[]>>({});
   const [clientLotsLoading, setClientLotsLoading] = useState<string | null>(null);
+  const [deleteProgress, setDeleteProgress] = useState<{ done: number; total: number } | null>(null);
+  const { confirm, dialog: confirmDialog } = useConfirm();
 
   const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
   const authHeaders: HeadersInit = token
@@ -240,8 +244,14 @@ export function AdminPanel() {
   };
 
   const submitWon = async () => {
-    if (!wonInput.trim()) return;
-    const res = await fetch("/api/won-lots", { method: "POST", headers: authHeaders, body: JSON.stringify({ text: wonInput }) });
+    if (!wonInput.trim() || wonSubmitting) return;
+    const winnings = wonPreview
+      .filter((p) => p.matched && p.price !== null)
+      .map((p) => ({ lotNumber: p.lotNumber, price: p.price as number, bodyNumber: p.bodyNumber }));
+    if (winnings.length === 0) { toast.error(t("wonLots.nothingToSave")); return; }
+    setWonSubmitting(true);
+    const res = await fetch("/api/won-lots", { method: "POST", headers: authHeaders, body: JSON.stringify({ winnings }) });
+    setWonSubmitting(false);
     if (res.ok) {
       const data = await res.json();
       toast.success(`${t("common.success")}: ${data.results.filter((r: { status: string }) => r.status !== "lot_not_found").length}/${data.processed}`);
@@ -260,21 +270,54 @@ export function AdminPanel() {
   const copyToClipboard = async (text: string) => { try { await navigator.clipboard.writeText(text); toast.success(t("email.copy") + " ✓"); } catch { toast.error(t("common.error")); } };
 
   const deleteLot = async (id: string) => {
-    if (!confirm(t("lots.deleteConfirm"))) return;
+    if (!(await confirm(t("lots.deleteConfirm"), { danger: true, confirmLabel: t("common.delete") }))) return;
+    const snapshot = lots;
+    setLots((prev) => prev.filter((l) => l.id !== id));
     const res = await fetch(`/api/lots?id=${id}`, { method: "DELETE", headers: authHeaders });
-    if (res.ok) { await loadLots(); await loadWonLots();
+    if (res.ok) {
+      loadWonLots();
       if (drilledClientId) { const f = await loadClientLots(drilledClientId); setClientLotsCache((p) => ({ ...p, [drilledClientId]: f })); }
-    } else { const data = await res.json().catch(() => ({})); toast.error(data.error || t("common.error")); }
+    } else {
+      setLots(snapshot);
+      const data = await res.json().catch(() => ({})); toast.error(data.error || t("common.error"));
+    }
   };
 
   const deleteSelectedLots = async () => {
     const ids = Array.from(selectedIds); if (ids.length === 0) return;
-    if (!confirm(t("lots.deleteSelectedConfirm").replace("{n}", String(ids.length)))) return;
-    let deleted = 0, failed = 0;
-    for (const id of ids) { const res = await fetch(`/api/lots?id=${id}`, { method: "DELETE", headers: authHeaders }); if (res.ok) deleted++; else failed++; }
+    if (!(await confirm(t("lots.deleteSelectedConfirm").replace("{n}", String(ids.length)), { danger: true, confirmLabel: t("common.delete") }))) return;
+
+    const snapshot = lots;
+    setLots((prev) => prev.filter((l) => !selectedIds.has(l.id)));
+    setSelectedIds(new Set());
+    setDeleteProgress({ done: 0, total: ids.length });
+
+    const results = await Promise.allSettled(
+      ids.map((id) =>
+        fetch(`/api/lots?id=${id}`, { method: "DELETE", headers: authHeaders }).then((res) => {
+          setDeleteProgress((p) => (p ? { done: p.done + 1, total: p.total } : p));
+          return { id, ok: res.ok };
+        })
+      )
+    );
+    setDeleteProgress(null);
+
+    const failedIds = results
+      .map((r) => (r.status === "fulfilled" ? r.value : null))
+      .filter((r): r is { id: string; ok: boolean } => !!r && !r.ok)
+      .map((r) => r.id);
+    const deleted = ids.length - failedIds.length;
+
     if (deleted > 0) toast.success(t("lots.deletedCount").replace("{n}", String(deleted)));
-    if (failed > 0) toast.error(t("lots.deleteSomeFailed").replace("{n}", String(failed)));
-    setSelectedIds(new Set()); await loadLots(); await loadWonLots();
+    if (failedIds.length > 0) {
+      toast.error(t("lots.deleteSomeFailed").replace("{n}", String(failedIds.length)));
+      // Restore only the lots that actually failed to delete
+      setLots((prev) => {
+        const restored = snapshot.filter((l) => failedIds.includes(l.id));
+        return [...restored, ...prev].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      });
+    }
+    loadWonLots();
   };
 
   const lotIndex = useMemo(() => {
@@ -365,7 +408,7 @@ export function AdminPanel() {
                         <td className="px-4 py-3 aa-mono font-bold text-primary">#{wl.lot.lotNumber}</td>
                         <td className="px-4 py-3 text-xs">{wl.lot.client.name || wl.lot.client.username}</td>
                         <td className="px-4 py-3 text-muted-foreground max-w-xs truncate hidden sm:table-cell">{wl.bodyNumber || stripLotNumber(wl.lot.rawText) || "—"}</td>
-                        <td className="px-4 py-3 text-right aa-mono font-semibold">{wl.price ? wl.price.toLocaleString() : "—"} <span className="text-xs text-muted-foreground">{t("wonLots.currency")}</span></td>
+                        <td className="px-4 py-3 text-right aa-mono font-semibold">{wl.price != null ? wl.price.toLocaleString() : "—"} <span className="text-xs text-muted-foreground">{t("wonLots.currency")}</span></td>
                       </motion.tr>
                     ))}
                   </tbody>
@@ -376,7 +419,7 @@ export function AdminPanel() {
         </div>
       )}
 
-      {activeTab === "delivery" && <AdminDelivery wonLots={wonLots} t={t} />}
+      {activeTab === "delivery" && <AdminDelivery wonLots={wonLots} setWonLots={setWonLots} authHeaders={authHeaders} t={t} />}
 
       {activeTab === "clients" && (
         <div>
@@ -485,7 +528,15 @@ export function AdminPanel() {
       <Modal open={showWonModal} onClose={() => setShowWonModal(false)} title={t("wonLots.acceptBids")} size="lg"
         footer={<>
           <button onClick={() => setShowWonModal(false)} className="h-10 px-4 rounded-md border border-border hover:bg-muted text-sm font-medium transition">{t("common.cancel")}</button>
-          <button onClick={submitWon} disabled={!wonInput.trim()} className="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-40 hover:bg-primary/90 transition-colors">{t("wonLots.confirmSave")}</button>
+          <button
+            onClick={submitWon}
+            disabled={!wonInput.trim() || wonSubmitting || wonPreview.filter((p) => p.matched).length === 0}
+            className="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-40 hover:bg-primary/90 transition-colors flex items-center gap-1.5"
+          >
+            {wonSubmitting && <CircleNotch className="w-4 h-4 animate-spin" weight="bold" />}
+            {t("wonLots.confirmSave")}
+            {wonPreview.filter((p) => p.matched).length > 0 && ` (${wonPreview.filter((p) => p.matched).length})`}
+          </button>
         </>}>
         <div className="space-y-4">
           <div className="space-y-1.5">
@@ -517,7 +568,7 @@ export function AdminPanel() {
                         <td className="px-3 py-2 aa-mono font-bold text-primary">#{p.lotNumber}</td>
                         <td className="px-3 py-2 text-xs hidden sm:table-cell text-muted-foreground">{p.bodyNumber || "—"}</td>
                         <td className="px-3 py-2 text-xs hidden sm:table-cell text-muted-foreground">{p.client || "—"}</td>
-                        <td className="px-3 py-2 text-right aa-mono font-semibold">{p.price !== null ? p.price.toLocaleString() : "—"} <span className="text-xs text-muted-foreground">{t("wonLots.currency")}</span></td>
+                        <td className="px-3 py-2 text-right aa-mono font-semibold">{p.price != null ? p.price.toLocaleString() : "—"} <span className="text-xs text-muted-foreground">{t("wonLots.currency")}</span></td>
                         <td className="px-3 py-2">{p.matched ? <StatusBadge status="WON" label={t("wonStatus.WON")} pulse={false} /> : <span className="text-xs text-destructive font-medium">{t("wonLots.notFound")}</span>}</td>
                       </tr>
                     ))}
@@ -563,6 +614,32 @@ export function AdminPanel() {
           <input type="text" value={newClient.name} onChange={(e) => setNewClient({ ...newClient, name: e.target.value })} placeholder={t("clients.newName")} className="w-full h-11 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30 focus:border-foreground/30 transition-colors" />
         </div>
       </Modal>
+
+      {confirmDialog}
+
+      <AnimatePresence>
+        {deleteProgress && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 16 }}
+            className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[1100] w-[calc(100%-2.5rem)] max-w-sm bg-card border border-border rounded-lg px-4 py-3 shadow-sm"
+          >
+            <div className="flex items-center justify-between text-xs font-medium mb-2">
+              <span>{t("common.delete")}…</span>
+              <span className="aa-mono text-muted-foreground">{deleteProgress.done}/{deleteProgress.total}</span>
+            </div>
+            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+              <motion.div
+                className="h-full bg-foreground"
+                initial={{ width: 0 }}
+                animate={{ width: `${(deleteProgress.done / deleteProgress.total) * 100}%` }}
+                transition={{ ease: "easeOut" }}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </AppShell>
   );
 }
@@ -584,6 +661,12 @@ function AdminLotsGrouped({ lots, t, selectedIds, onToggleSelect, onToggleSelect
     const out: Group[] = [];
     map.forEach((arr) => { out.push({ key: `kit:${arr[0]?.id}`, comment: arr[0]?.comment || null, clientName: arr[0]?.client.name || arr[0]?.client.username || "—", lots: arr }); });
     for (const lot of individual) out.push({ key: `single:${lot.id}`, comment: null, clientName: lot.client.name || lot.client.username, lots: [lot] });
+    // Sort by each group's most recent lot — kits and individual lots interleave by true recency
+    out.sort((a, b) => {
+      const aMax = Math.max(...a.lots.map((l) => new Date(l.createdAt).getTime()));
+      const bMax = Math.max(...b.lots.map((l) => new Date(l.createdAt).getTime()));
+      return bMax - aMax;
+    });
     return out;
   })();
 
@@ -634,8 +717,9 @@ function AdminLotsGrouped({ lots, t, selectedIds, onToggleSelect, onToggleSelect
   </>);
 }
 
-function AdminDelivery({ wonLots, t }: { wonLots: WonLot[]; t: (k: string) => string }) {
+function AdminDelivery({ wonLots, setWonLots, authHeaders, t }: { wonLots: WonLot[]; setWonLots: React.Dispatch<React.SetStateAction<WonLot[]>>; authHeaders: HeadersInit; t: (k: string) => string }) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
   const withDelivery = wonLots.filter((w) => w.deliveryReqs.length > 0);
   const filtered = useMemo(() => {
     const terms = parseSearchTerms(searchQuery);
@@ -646,6 +730,22 @@ function AdminDelivery({ wonLots, t }: { wonLots: WonLot[]; t: (k: string) => st
       return terms.some((term) => { const t = term.toLowerCase(); return bodyNum.includes(t) || lotNum.includes(t); });
     });
   }, [withDelivery, searchQuery]);
+
+  const advanceStatus = async (wonLotId: string, nextStatus: string) => {
+    const snapshot = wonLots;
+    setUpdatingId(wonLotId);
+    setWonLots((prev) => prev.map((w) => (w.id === wonLotId ? { ...w, status: nextStatus } : w)));
+    const res = await fetch("/api/delivery", {
+      method: "PATCH",
+      headers: authHeaders,
+      body: JSON.stringify({ wonLotId, status: nextStatus }),
+    });
+    setUpdatingId(null);
+    if (!res.ok) {
+      setWonLots(snapshot);
+      toast.error(t("common.error"));
+    }
+  };
 
   return (
     <div>
@@ -672,14 +772,36 @@ function AdminDelivery({ wonLots, t }: { wonLots: WonLot[]; t: (k: string) => st
                     <div className="w-11 h-11 rounded-md bg-foreground flex items-center justify-center flex-shrink-0"><Truck className="w-5 h-5 text-background" weight="regular" /></div>
                     <div className="min-w-0"><div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{t("delivery.lotNumber")}</div><div className="text-xl font-extrabold aa-mono text-primary mt-0.5 truncate">#{wl.lot.lotNumber}</div></div>
                   </div>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#EDF3EC] text-[#346538] border border-[#D8E6D6] text-xs font-semibold flex-shrink-0"><Check className="w-3.5 h-3.5" weight="bold" />{t("delivery.choosen")}</span>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <StatusBadge status={wl.status} label={t(`wonStatus.${wl.status}`)} pulse={wl.status === "DELIVERY_REQUESTED"} />
+                    {wl.status === "DELIVERY_REQUESTED" && (
+                      <button
+                        onClick={() => advanceStatus(wl.id, "DELIVERY_CONFIRMED")}
+                        disabled={updatingId === wl.id}
+                        className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center gap-1.5"
+                      >
+                        {updatingId === wl.id && <CircleNotch className="w-3.5 h-3.5 animate-spin" weight="bold" />}
+                        {t("delivery.confirm")}
+                      </button>
+                    )}
+                    {wl.status === "DELIVERY_CONFIRMED" && (
+                      <button
+                        onClick={() => advanceStatus(wl.id, "COMPLETED")}
+                        disabled={updatingId === wl.id}
+                        className="h-8 px-3 rounded-md border border-border hover:bg-muted text-xs font-semibold disabled:opacity-50 transition flex items-center gap-1.5"
+                      >
+                        {updatingId === wl.id && <CircleNotch className="w-3.5 h-3.5 animate-spin" weight="bold" />}
+                        {t("delivery.complete")}
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="px-5 pb-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2.5">
                     <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1 flex items-center gap-1.5"><FileText className="w-3 h-3" />{t("delivery.lotInfo")}</div>
                     <InfoRow icon={<Hash className="w-3.5 h-3.5" />} label={t("delivery.lotNumber")} value={`#${wl.lot.lotNumber}`} mono />
                     <InfoRow icon={<FileText className="w-3.5 h-3.5" />} label={t("wonLots.bodyNumber")} value={wl.bodyNumber || stripLotNumber(wl.lot.rawText) || "—"} />
-                    <InfoRow icon={<Coins className="w-3.5 h-3.5" />} label={t("delivery.price")} value={wl.price ? `${wl.price.toLocaleString()} ${t("wonLots.currency")}` : "—"} mono />
+                    <InfoRow icon={<Coins className="w-3.5 h-3.5" />} label={t("delivery.price")} value={wl.price != null ? `${wl.price.toLocaleString()} ${t("wonLots.currency")}` : "—"} mono />
                     <InfoRow icon={<Truck className="w-3.5 h-3.5" />} label={t("delivery.method")} value={req?.method ? t(`delivery.${req.method}`) : "—"} />
                     <InfoRow icon={<Calendar className="w-3.5 h-3.5" />} label={t("delivery.createdAt")} value={req ? new Date(req.createdAt).toLocaleString() : "—"} />
                   </div>
