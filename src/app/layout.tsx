@@ -1,13 +1,20 @@
 import type { Metadata, Viewport } from "next";
-import { Nunito, JetBrains_Mono } from "next/font/google";
+import { Manrope, Playfair_Display, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster as Sonner } from "sonner";
 import { Providers } from "@/contexts/Providers";
 
-const nunito = Nunito({
+const manrope = Manrope({
   subsets: ["latin", "cyrillic"],
-  variable: "--font-nunito",
+  variable: "--font-manrope",
   weight: ["400", "500", "600", "700", "800"],
+});
+
+const playfair = Playfair_Display({
+  subsets: ["latin", "cyrillic"],
+  variable: "--font-playfair",
+  weight: ["500", "600", "700"],
+  style: ["normal", "italic"],
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -48,7 +55,7 @@ export default function RootLayout({
   return (
     <html lang="ru" suppressHydrationWarning>
       <body
-        className={`${nunito.variable} ${jetbrainsMono.variable} antialiased bg-background text-foreground`}
+        className={`${manrope.variable} ${playfair.variable} ${jetbrainsMono.variable} antialiased bg-background text-foreground`}
       >
         <Providers>{children}</Providers>
         <Sonner position="top-right" richColors closeButton />

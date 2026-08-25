@@ -6,7 +6,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-playfair), Georgia, serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -41,80 +42,81 @@
   --color-aa: var(--aa);
   --color-aa-soft: var(--aa-soft);
   --color-aa-ink: var(--aa-ink);
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-xl: 30px;
+  /* Utilitarian minimalism: crisp 8-12px radius scale, no pills on large elements */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 12px;
 }
 
 :root {
-  /* AutoAuction: blue #3A6BFF + clean white */
-  --background: #f7f9fc;
-  --foreground: #0e1424;
-  --card: #ffffff;
-  --card-foreground: #0e1424;
-  --popover: #ffffff;
-  --popover-foreground: #0e1424;
-  --primary: #3A6BFF;
-  --primary-foreground: #ffffff;
-  --secondary: #eef2ff;
-  --secondary-foreground: #1f2a44;
-  --muted: #f1f4f9;
-  --muted-foreground: #64708a;
-  --accent: #eaf0ff;
-  --accent-foreground: #2a4cbf;
-  --destructive: #ef4444;
-  --border: #e3e8f0;
-  --input: #e3e8f0;
-  --ring: #3A6BFF;
-  --aa: #3A6BFF;
-  --aa-soft: #eaf0ff;
-  --aa-ink: #1f2a44;
-  --chart-1: #3A6BFF;
-  --chart-2: #16a34a;
-  --chart-3: #f59e0b;
-  --chart-4: #ec4899;
-  --chart-5: #8b5cf6;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #0e1424;
-  --sidebar-primary: #3A6BFF;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #eaf0ff;
-  --sidebar-accent-foreground: #2a4cbf;
-  --sidebar-border: #e3e8f0;
-  --sidebar-ring: #3A6BFF;
+  /* Warm monochrome canvas + muted pastel accent (Pale Blue) */
+  --background: #FBFBFA;
+  --foreground: #111111;
+  --card: #FFFFFF;
+  --card-foreground: #111111;
+  --popover: #FFFFFF;
+  --popover-foreground: #111111;
+  --primary: #111111;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F7F6F3;
+  --secondary-foreground: #2F3437;
+  --muted: #F7F6F3;
+  --muted-foreground: #787774;
+  --accent: #E1F3FE;
+  --accent-foreground: #1F6C9F;
+  --destructive: #9F2F2D;
+  --border: #EAEAEA;
+  --input: #EAEAEA;
+  --ring: #111111;
+  --aa: #1F6C9F;
+  --aa-soft: #E1F3FE;
+  --aa-ink: #2F3437;
+  --chart-1: #1F6C9F;
+  --chart-2: #346538;
+  --chart-3: #956400;
+  --chart-4: #9F2F2D;
+  --chart-5: #787774;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #111111;
+  --sidebar-primary: #111111;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #E1F3FE;
+  --sidebar-accent-foreground: #1F6C9F;
+  --sidebar-border: #EAEAEA;
+  --sidebar-ring: #111111;
 }
 
 .dark {
-  --background: #0b1020;
-  --foreground: #e8ecf6;
-  --card: #11182f;
-  --card-foreground: #e8ecf6;
-  --popover: #11182f;
-  --popover-foreground: #e8ecf6;
-  --primary: #5a86ff;
-  --primary-foreground: #ffffff;
-  --secondary: #1a2340;
-  --secondary-foreground: #e8ecf6;
-  --muted: #1a2340;
-  --muted-foreground: #94a0c0;
-  --accent: #1a2a55;
-  --accent-foreground: #c5d4ff;
-  --destructive: #f87171;
-  --border: #2a3556;
-  --input: #2a3556;
-  --ring: #5a86ff;
-  --aa: #5a86ff;
-  --aa-soft: #1a2a55;
-  --aa-ink: #c5d4ff;
-  --sidebar: #11182f;
-  --sidebar-foreground: #e8ecf6;
-  --sidebar-primary: #5a86ff;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1a2a55;
-  --sidebar-accent-foreground: #c5d4ff;
-  --sidebar-border: #2a3556;
-  --sidebar-ring: #5a86ff;
+  --background: #17181A;
+  --foreground: #EDECE9;
+  --card: #1F2023;
+  --card-foreground: #EDECE9;
+  --popover: #1F2023;
+  --popover-foreground: #EDECE9;
+  --primary: #EDECE9;
+  --primary-foreground: #17181A;
+  --secondary: #232427;
+  --secondary-foreground: #EDECE9;
+  --muted: #232427;
+  --muted-foreground: #9A988F;
+  --accent: #1B2C36;
+  --accent-foreground: #7FC1EE;
+  --destructive: #E5827F;
+  --border: #2C2D30;
+  --input: #2C2D30;
+  --ring: #EDECE9;
+  --aa: #7FC1EE;
+  --aa-soft: #1B2C36;
+  --aa-ink: #D8ECFB;
+  --sidebar: #1F2023;
+  --sidebar-foreground: #EDECE9;
+  --sidebar-primary: #EDECE9;
+  --sidebar-primary-foreground: #17181A;
+  --sidebar-accent: #1B2C36;
+  --sidebar-accent-foreground: #7FC1EE;
+  --sidebar-border: #2C2D30;
+  --sidebar-ring: #EDECE9;
 }
 
 @layer base {
@@ -132,7 +134,7 @@
     height: 6px;
   }
   .scroll-slim::-webkit-scrollbar-thumb {
-    background: rgba(58, 107, 255, 0.25);
+    background: rgba(17, 17, 17, 0.14);
     border-radius: 9999px;
   }
   .scroll-slim::-webkit-scrollbar-track {
@@ -140,45 +142,26 @@
   }
 }
 
-/* AutoAuction utility classes */
+/* AutoAuction utility classes — flat, bordered, no gradients, no glow */
 .aa-card {
-  border-radius: 30px;
+  border-radius: 12px;
   background: var(--card);
-  border: 1px solid rgba(15, 23, 42, 0.04);
-  box-shadow:
-    0 1px 2px rgba(15, 23, 42, 0.04),
-    0 8px 24px -8px rgba(15, 23, 42, 0.08);
-  transition: box-shadow 280ms cubic-bezier(0.16, 1, 0.3, 1),
-    transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid var(--border);
 }
 
 .aa-card-hover:hover {
-  box-shadow:
-    0 1px 2px rgba(15, 23, 42, 0.06),
-    0 16px 40px -12px rgba(58, 107, 255, 0.18);
-  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(17, 17, 17, 0.04);
+  border-color: rgba(17, 17, 17, 0.12);
 }
 
 .aa-soft {
   background: var(--card);
-  border-radius: 24px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03),
-    0 6px 20px -10px rgba(15, 23, 42, 0.06);
+  border-radius: 10px;
+  border: 1px solid var(--border);
 }
 
-.aa-grad {
-  background: linear-gradient(135deg, #3A6BFF 0%, #5a86ff 100%);
-}
-
-.aa-grad-text {
-  background: linear-gradient(135deg, #3A6BFF 0%, #7a3aff 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.aa-shadow {
-  box-shadow: 0 12px 40px -10px rgba(58, 107, 255, 0.35);
+.aa-mark {
+  background: var(--foreground);
 }
 
 .aa-mono {
@@ -186,13 +169,19 @@
   font-feature-settings: "tnum";
 }
 
-/* Pulsing status for PENDING / WAITING-like statuses */
+.aa-serif {
+  font-family: var(--font-serif);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+/* Pulsing status for PENDING / WAITING-like statuses — restrained, monochrome-safe */
 @keyframes aa-pulse {
   0%, 100% {
-    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.55);
+    box-shadow: 0 0 0 0 rgba(149, 100, 0, 0.35);
   }
   50% {
-    box-shadow: 0 0 0 6px rgba(245, 158, 11, 0);
+    box-shadow: 0 0 0 5px rgba(149, 100, 0, 0);
   }
 }
 
@@ -202,10 +191,10 @@
 
 @keyframes aa-pulse-won {
   0%, 100% {
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
+    box-shadow: 0 0 0 0 rgba(52, 101, 56, 0.35);
   }
   50% {
-    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+    box-shadow: 0 0 0 5px rgba(52, 101, 56, 0);
   }
 }
 
@@ -215,7 +204,7 @@
 
 /* Mobile bottom-sheet modal */
 .aa-sheet {
-  border-radius: 30px 30px 0 0;
+  border-radius: 12px 12px 0 0;
 }
 
 /* Reduce motion for users that prefer it */
@@ -226,11 +215,7 @@
   }
 }
 
-/* iOS Safari auto-zooms on input focus when font-size < 16px.
-   Force 16px on mobile to prevent the page-zoom-on-focus behaviour.
-   Combined with the viewport meta (maximum-scale=1, user-scalable=no) this
-   fully disables the auto-zoom that was causing the page to "jump in" when
-   the user started typing in any input/textarea/select. */
+/* iOS Safari auto-zooms on input focus when font-size < 16px. */
 @media (max-width: 768px) {
   input,
   textarea,

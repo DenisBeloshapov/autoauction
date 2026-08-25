@@ -7,9 +7,9 @@ import {
   Trophy,
   Truck,
   Plus,
-  Trash2,
+  Trash,
   Package,
-  Loader2,
+  CircleNotch,
   X,
   Check,
   User,
@@ -18,8 +18,8 @@ import {
   FileText,
   Calendar,
   Coins,
-  Boxes,
-} from "lucide-react";
+  Cube,
+} from "@phosphor-icons/react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { AppShell, type Tab } from "./AppShell";
@@ -261,7 +261,7 @@ export function ClientPanel() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <CircleNotch className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -282,15 +282,15 @@ export function ClientPanel() {
       {activeTab === "myLots" && (
         <div>
           <div className="hidden md:flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold">{t("nav.myLots")}</h1>
+            <h1 className="aa-serif text-2xl font-semibold">{t("nav.myLots")}</h1>
             <button
               onClick={() => setShowAdd(true)}
-              className="h-10 px-4 rounded-xl aa-grad text-white text-sm font-semibold flex items-center gap-1.5 hover:brightness-110 transition"
+              className="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-1.5 hover:bg-primary/90 transition-colors"
             >
               <Plus className="w-4 h-4" /> {t("lots.add")}
             </button>
           </div>
-          <h1 className="md:hidden text-xl font-bold mb-4">{t("nav.myLots")}</h1>
+          <h1 className="aa-serif md:hidden text-xl font-semibold mb-4">{t("nav.myLots")}</h1>
 
           {lots.length === 0 ? (
             <EmptyState icon={<Package className="w-10 h-10 text-muted-foreground" />} text={t("lots.noLots")} />
@@ -306,7 +306,7 @@ export function ClientPanel() {
 
       {activeTab === "wonLots" && (
         <div>
-          <h1 className="text-2xl font-bold mb-6">{t("nav.wonLots")}</h1>
+          <h1 className="aa-serif text-2xl font-semibold mb-6">{t("nav.wonLots")}</h1>
           {wonLots.length === 0 ? (
             <EmptyState icon={<Trophy className="w-10 h-10 text-muted-foreground" />} text={t("wonLots.noWonLots")} />
           ) : (
@@ -347,7 +347,7 @@ export function ClientPanel() {
                           </td>
                           <td className="px-4 py-3">
                             {hasDelivery ? (
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#EDF3EC] text-[#346538] border border-[#D8E6D6] text-xs font-semibold">
                                 <Check className="w-3.5 h-3.5" />
                                 {t("delivery.choosen")}
                               </span>
@@ -378,7 +378,7 @@ export function ClientPanel() {
 
       {activeTab === "delivery" && (
         <div>
-          <h1 className="text-2xl font-bold mb-6">{t("nav.delivery")}</h1>
+          <h1 className="aa-serif text-2xl font-semibold mb-6">{t("nav.delivery")}</h1>
           {wonWithDelivery.length === 0 ? (
             <EmptyState icon={<Truck className="w-10 h-10 text-muted-foreground" />} text={t("delivery.noRequests")} />
           ) : (
@@ -400,7 +400,7 @@ export function ClientPanel() {
                     {/* Header */}
                     <div className="flex items-start justify-between p-5 pb-4 gap-3">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-11 h-11 rounded-2xl aa-grad flex items-center justify-center flex-shrink-0">
+                        <div className="w-11 h-11 rounded-md bg-foreground flex items-center justify-center flex-shrink-0">
                           <Truck className="w-5 h-5 text-white" />
                         </div>
                         <div className="min-w-0">
@@ -412,7 +412,7 @@ export function ClientPanel() {
                           </div>
                         </div>
                       </div>
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold flex-shrink-0">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#EDF3EC] text-[#346538] border border-[#D8E6D6] text-xs font-semibold flex-shrink-0">
                         <Check className="w-3.5 h-3.5" />
                         {t("delivery.choosen")}
                       </span>
@@ -472,16 +472,16 @@ export function ClientPanel() {
           <>
             <button
               onClick={() => setShowAdd(false)}
-              className="h-10 px-4 rounded-xl border border-border hover:bg-muted text-sm font-medium transition"
+              className="h-10 px-4 rounded-md border border-border hover:bg-muted text-sm font-medium transition"
             >
               {t("common.cancel")}
             </button>
             <button
               onClick={submitLots}
               disabled={submitting || validLots.length === 0}
-              className="h-10 px-4 rounded-xl aa-grad text-white text-sm font-semibold flex items-center gap-1.5 disabled:opacity-60 transition hover:brightness-110"
+              className="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-1.5 disabled:opacity-40 transition-colors hover:bg-primary/90"
             >
-              {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+              {submitting && <CircleNotch className="w-4 h-4 animate-spin" />}
               {t("lots.saveN").replace("{n}", String(validLots.length))}
             </button>
           </>
@@ -521,7 +521,7 @@ export function ClientPanel() {
                       placeholder={t("lots.lotTextPlaceholder")}
                       rows={2}
                       autoFocus={idx === 0}
-                      className="flex-1 rounded-[25px] border border-input bg-white p-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                      className="flex-1 rounded-md border border-input bg-background p-3 text-sm font-medium focus:outline-none focus:ring-1 focus:ring-foreground/30 focus:border-foreground/30 transition-colors resize-none"
                     />
                   </div>
                   {entry.trim() && (
@@ -540,7 +540,7 @@ export function ClientPanel() {
           {/* Add another lot button */}
           <button
             onClick={addLotEntry}
-            className="w-full h-11 rounded-xl border-2 border-dashed border-border hover:border-primary/40 hover:bg-accent/40 text-sm font-medium text-muted-foreground hover:text-primary flex items-center justify-center gap-1.5 transition"
+            className="w-full h-11 rounded-md border-2 border-dashed border-border hover:border-primary/40 hover:bg-accent/40 text-sm font-medium text-muted-foreground hover:text-primary flex items-center justify-center gap-1.5 transition"
           >
             <Plus className="w-4 h-4" />
             {t("lots.addAnother")}
@@ -556,7 +556,7 @@ export function ClientPanel() {
               onChange={(e) => setLotComment(e.target.value)}
               placeholder={t("lots.commentAllPlaceholder")}
               rows={2}
-              className="w-full rounded-[25px] border border-input bg-white p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+              className="w-full rounded-md border border-input bg-background p-3 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30 focus:border-foreground/30 transition-colors resize-none"
             />
           </div>
         </div>
@@ -572,13 +572,13 @@ export function ClientPanel() {
           <>
             <button
               onClick={() => setDeliveryWonLot(null)}
-              className="h-10 px-4 rounded-xl border border-border hover:bg-muted text-sm font-medium transition"
+              className="h-10 px-4 rounded-md border border-border hover:bg-muted text-sm font-medium transition"
             >
               {t("common.cancel")}
             </button>
             <button
               onClick={submitDelivery}
-              className="h-10 px-4 rounded-xl aa-grad text-white text-sm font-semibold transition hover:brightness-110"
+              className="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-semibold transition-colors hover:bg-primary/90"
             >
               {t("common.save")}
             </button>
@@ -603,7 +603,7 @@ export function ClientPanel() {
                 <button
                   key={m}
                   onClick={() => setDeliveryMethod(m)}
-                  className={`text-left p-3 rounded-xl border text-sm font-medium transition ${
+                  className={`text-left p-3 rounded-md border text-sm font-medium transition ${
                     deliveryMethod === m
                       ? "border-primary bg-accent text-accent-foreground shadow-sm"
                       : "border-border hover:bg-muted hover:border-primary/30"
@@ -629,7 +629,7 @@ export function ClientPanel() {
                   value={ownerFullName}
                   onChange={(e) => setOwnerFullName(e.target.value)}
                   placeholder={t("delivery.ownerFullNamePlaceholder")}
-                  className="w-full h-11 rounded-[25px] border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full h-11 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30 focus:border-foreground/30 transition-colors"
                 />
               </div>
               <div className="space-y-1.5">
@@ -641,7 +641,7 @@ export function ClientPanel() {
                   value={ownerAddress}
                   onChange={(e) => setOwnerAddress(e.target.value)}
                   placeholder={t("delivery.ownerAddressPlaceholder")}
-                  className="w-full h-11 rounded-[25px] border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full h-11 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30 focus:border-foreground/30 transition-colors"
                 />
               </div>
             </motion.div>
@@ -717,7 +717,7 @@ function MyLotsGrouped({
             {isKit && (
               <div className="flex items-center gap-2.5 px-2">
                 <div className="w-7 h-7 rounded-lg bg-accent text-accent-foreground flex items-center justify-center flex-shrink-0">
-                  <Boxes className="w-4 h-4" />
+                  <Cube className="w-4 h-4" />
                 </div>
                 <div className="min-w-0">
                   <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
@@ -773,7 +773,7 @@ function MyLotsGrouped({
                       onClick={() => onDelete(lot.id)}
                       className="text-xs text-destructive hover:underline flex items-center gap-1 transition"
                     >
-                      <Trash2 className="w-3 h-3" /> {t("common.delete")}
+                      <Trash className="w-3 h-3" /> {t("common.delete")}
                     </button>
                   </div>
                 </motion.div>

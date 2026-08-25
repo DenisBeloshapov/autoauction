@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import { X } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 export type ModalSize = "sm" | "md" | "lg" | "xl";
@@ -54,9 +54,9 @@ export function Modal({ open, onClose, title, size = "md", children, footer }: M
           />
           <motion.div
             className={cn(
-              "relative w-full bg-card shadow-2xl overflow-hidden",
+              "relative w-full bg-card border border-border overflow-hidden",
               // Mobile: bottom sheet (rounded top, full width, slides up)
-              "aa-sheet sm:rounded-[30px]",
+              "aa-sheet sm:rounded-xl",
               "mt-auto sm:mt-0",
               sizeClass[size]
             )}
@@ -78,7 +78,7 @@ export function Modal({ open, onClose, title, size = "md", children, footer }: M
                   className="p-2 rounded-full hover:bg-muted transition"
                   aria-label="Close"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-4 h-4" weight="bold" />
                 </button>
               </div>
             )}

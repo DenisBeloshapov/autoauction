@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { LogOut, Globe, Plus, Settings } from "lucide-react";
+import { SignOut, Globe, Plus, Gear } from "@phosphor-icons/react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LanguageToggle } from "@/components/aa/LanguageToggle";
@@ -29,10 +29,10 @@ export function AppShell({ tabs, activeTab, onTabChange, children, fab }: AppShe
   const [showSettings, setShowSettings] = useState(false);
 
   const Sidebar = (
-    <aside className="hidden md:flex md:w-[260px] md:flex-col md:fixed md:inset-y-0 md:left-0 border-r border-border/60 bg-white/70 backdrop-blur-xl px-5 py-6 z-30">
+    <aside className="hidden md:flex md:w-[260px] md:flex-col md:fixed md:inset-y-0 md:left-0 border-r border-border bg-background/70 backdrop-blur-xl px-5 py-6 z-30">
       <div className="flex items-center gap-3 mb-8">
-        <div className="w-11 h-11 rounded-2xl aa-grad flex items-center justify-center aa-shadow flex-shrink-0">
-          <Globe className="w-5 h-5 text-white" />
+        <div className="w-11 h-11 rounded-lg bg-foreground flex items-center justify-center flex-shrink-0">
+          <Globe className="w-5 h-5 text-background" weight="bold" />
         </div>
         <div className="min-w-0">
           <div className="text-base font-bold text-foreground truncate">AutoAuction</div>
@@ -49,14 +49,14 @@ export function AppShell({ tabs, activeTab, onTabChange, children, fab }: AppShe
               key={tab.key}
               onClick={() => onTabChange(tab.key)}
               className={cn(
-                "relative px-4 py-3 rounded-2xl text-sm font-semibold flex items-center gap-3 transition",
+                "relative px-4 py-3 rounded-lg text-sm font-semibold flex items-center gap-3 transition",
                 active ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
               )}
             >
               {active && (
                 <motion.div
                   layoutId="side-tab-indicator"
-                  className="absolute inset-0 rounded-2xl aa-grad"
+                  className="absolute inset-0 rounded-lg bg-foreground"
                   transition={{ type: "spring", damping: 26, stiffness: 320 }}
                 />
               )}
@@ -68,26 +68,26 @@ export function AppShell({ tabs, activeTab, onTabChange, children, fab }: AppShe
           );
         })}
       </nav>
-      <div className="mt-4 pt-4 border-t border-border/60">
+      <div className="mt-4 pt-4 border-t border-border">
         <div className="text-xs text-muted-foreground mb-2">{user?.name || user?.username}</div>
         <div className="flex items-center justify-between gap-2">
           <LanguageToggle />
           {user?.role === "ADMIN" && (
             <button
               onClick={() => setShowSettings(true)}
-              className="h-9 w-9 rounded-xl border border-border bg-white hover:bg-muted flex items-center justify-center transition"
+              className="h-9 w-9 rounded-md border border-border bg-card hover:bg-muted flex items-center justify-center transition"
               title={t("settings.title")}
               aria-label={t("settings.title")}
             >
-              <Settings className="w-4 h-4" />
+              <Gear className="w-4 h-4" weight="regular" />
             </button>
           )}
           <button
             onClick={logout}
-            className="h-9 px-3 rounded-xl border border-border bg-white hover:bg-muted text-xs font-medium flex items-center gap-1.5 transition"
+            className="h-9 px-3 rounded-md border border-border bg-card hover:bg-muted text-xs font-medium flex items-center gap-1.5 transition"
             title={t("auth.logout")}
           >
-            <LogOut className="w-4 h-4" />
+            <SignOut className="w-4 h-4" weight="regular" />
           </button>
         </div>
       </div>
@@ -95,11 +95,11 @@ export function AppShell({ tabs, activeTab, onTabChange, children, fab }: AppShe
   );
 
   const MobileTopBar = (
-    <header className="md:hidden sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-border/60">
+    <header className="md:hidden sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border">
       <div className="px-4 py-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-9 h-9 rounded-xl aa-grad flex items-center justify-center shadow-md flex-shrink-0">
-            <Globe className="w-4 h-4 text-white" />
+          <div className="w-9 h-9 rounded-md bg-foreground flex items-center justify-center flex-shrink-0">
+            <Globe className="w-4 h-4 text-background" weight="bold" />
           </div>
           <div className="min-w-0">
             <div className="text-sm font-bold truncate leading-tight">AutoAuction</div>
@@ -113,20 +113,20 @@ export function AppShell({ tabs, activeTab, onTabChange, children, fab }: AppShe
           {user?.role === "ADMIN" && (
             <button
               onClick={() => setShowSettings(true)}
-              className="h-9 w-9 rounded-xl border border-border bg-white hover:bg-muted flex items-center justify-center transition"
+              className="h-9 w-9 rounded-md border border-border bg-card hover:bg-muted flex items-center justify-center transition"
               title={t("settings.title")}
               aria-label={t("settings.title")}
             >
-              <Settings className="w-4 h-4" />
+              <Gear className="w-4 h-4" weight="regular" />
             </button>
           )}
           <button
             onClick={logout}
-            className="h-9 w-9 rounded-xl border border-border bg-white hover:bg-muted flex items-center justify-center transition"
+            className="h-9 w-9 rounded-md border border-border bg-card hover:bg-muted flex items-center justify-center transition"
             title={t("auth.logout")}
             aria-label={t("auth.logout")}
           >
-            <LogOut className="w-4 h-4" />
+            <SignOut className="w-4 h-4" weight="regular" />
           </button>
         </div>
       </div>
@@ -134,7 +134,7 @@ export function AppShell({ tabs, activeTab, onTabChange, children, fab }: AppShe
   );
 
   const MobileBottomBar = (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white/90 backdrop-blur-xl border-t border-border/60 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2">
+    <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-background/90 backdrop-blur-xl border-t border-border px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2">
       <div className="flex items-stretch justify-around">
         {tabs.map((tab) => {
           const active = tab.key === activeTab;
@@ -143,7 +143,7 @@ export function AppShell({ tabs, activeTab, onTabChange, children, fab }: AppShe
               key={tab.key}
               onClick={() => onTabChange(tab.key)}
               className={cn(
-                "relative flex-1 px-2 py-1.5 rounded-xl flex flex-col items-center gap-1 text-[10px] font-semibold transition",
+                "relative flex-1 px-2 py-1.5 rounded-md flex flex-col items-center gap-1 text-[10px] font-semibold transition",
                 active ? "text-primary" : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -169,10 +169,10 @@ export function AppShell({ tabs, activeTab, onTabChange, children, fab }: AppShe
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ type: "spring", damping: 22, stiffness: 320, delay: 0.2 }}
-      className="md:hidden fixed right-5 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 h-14 px-5 rounded-full aa-grad text-white font-semibold flex items-center gap-2 aa-shadow"
+      className="md:hidden fixed right-5 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 h-14 px-5 rounded-lg bg-foreground text-background font-semibold flex items-center gap-2"
       aria-label={fab.label}
     >
-      {fab.icon || <Plus className="w-5 h-5" />}
+      {fab.icon || <Plus className="w-5 h-5" weight="bold" />}
       <span className="text-sm">{fab.label}</span>
     </motion.button>
   );
@@ -192,7 +192,7 @@ export function AppShell({ tabs, activeTab, onTabChange, children, fab }: AppShe
           {children}
         </motion.div>
       </main>
-      <footer className="hidden md:block mt-auto ml-[260px] px-10 py-5 border-t border-border/60 text-xs text-muted-foreground text-center">
+      <footer className="hidden md:block mt-auto ml-[260px] px-10 py-5 border-t border-border text-xs text-muted-foreground text-center">
         AutoAuction · v1.0 · {new Date().getFullYear()}
       </footer>
       {MobileBottomBar}

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Modal } from "./Modal";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { CircleNotch, Check } from "@phosphor-icons/react";
 
 type Settings = {
   emailRecipient: string | null;
@@ -108,7 +108,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
     <Modal open={open} onClose={onClose} title={t("settings.title")} size="md">
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          <CircleNotch className="w-6 h-6 animate-spin text-primary" weight="bold" />
         </div>
       ) : (
         <div className="space-y-6">
@@ -121,27 +121,27 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 placeholder={t("settings.currentPassword")}
-                className="w-full h-11 rounded-[25px] border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full h-11 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30 focus:border-foreground/30 transition-colors"
               />
               <input
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder={t("settings.newPassword")}
-                className="w-full h-11 rounded-[25px] border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full h-11 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30 focus:border-foreground/30 transition-colors"
               />
               <button
                 onClick={changePassword}
                 disabled={savingPassword || !currentPassword || !newPassword}
-                className="h-10 px-4 rounded-xl aa-grad text-white text-sm font-semibold flex items-center gap-1.5 disabled:opacity-60 hover:brightness-110 transition"
+                className="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-1.5 disabled:opacity-40 hover:bg-primary/90 transition-colors"
               >
-                {savingPassword && <Loader2 className="w-4 h-4 animate-spin" />}
+                {savingPassword && <CircleNotch className="w-4 h-4 animate-spin" weight="bold" />}
                 {t("settings.changePassword")}
               </button>
             </div>
           </section>
 
-          <div className="border-t border-border/60" />
+          <div className="border-t border-border" />
 
           {/* Email получателя */}
           <section className="space-y-3">
@@ -151,11 +151,11 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
               value={settings.emailRecipient || ""}
               onChange={(e) => setSettings({ ...settings, emailRecipient: e.target.value })}
               placeholder="auction@company.com"
-              className="w-full h-11 rounded-[25px] border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full h-11 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30 focus:border-foreground/30 transition-colors"
             />
           </section>
 
-          <div className="border-t border-border/60" />
+          <div className="border-t border-border" />
 
           {/* SMTP настройки */}
           <section className="space-y-3">
@@ -169,7 +169,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
                   value={settings.smtpHost || ""}
                   onChange={(e) => setSettings({ ...settings, smtpHost: e.target.value })}
                   placeholder="smtp.gmail.com"
-                  className="w-full h-11 rounded-[25px] border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full h-11 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30 focus:border-foreground/30 transition-colors"
                 />
               </div>
               <div>
@@ -179,7 +179,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
                   value={settings.smtpPort || ""}
                   onChange={(e) => setSettings({ ...settings, smtpPort: e.target.value })}
                   placeholder="587"
-                  className="w-full h-11 rounded-[25px] border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full h-11 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30 focus:border-foreground/30 transition-colors"
                 />
               </div>
               <div>
@@ -189,7 +189,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
                   value={settings.smtpUser || ""}
                   onChange={(e) => setSettings({ ...settings, smtpUser: e.target.value })}
                   placeholder="sender@gmail.com"
-                  className="w-full h-11 rounded-[25px] border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full h-11 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30 focus:border-foreground/30 transition-colors"
                 />
               </div>
               <div className="col-span-2">
@@ -199,38 +199,38 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
                   value={settings.smtpFrom || ""}
                   onChange={(e) => setSettings({ ...settings, smtpFrom: e.target.value })}
                   placeholder='AutoAuction <sender@gmail.com>'
-                  className="w-full h-11 rounded-[25px] border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full h-11 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30 focus:border-foreground/30 transition-colors"
                 />
               </div>
               <div className="col-span-2">
                 <label className="text-xs font-semibold text-muted-foreground uppercase">
-                  {t("settings.smtpPassword")} {settings.smtpPasswordConfigured && <span className="text-emerald-600">✓</span>}
+                  {t("settings.smtpPassword")} {settings.smtpPasswordConfigured && <Check className="inline w-3.5 h-3.5 text-[#346538]" weight="bold" />}
                 </label>
                 <input
                   type="password"
                   value={smtpPassword}
                   onChange={(e) => setSmtpPassword(e.target.value)}
                   placeholder={settings.smtpPasswordConfigured ? t("settings.smtpPasswordConfigured") : t("settings.smtpPassword")}
-                  className="w-full h-11 rounded-[25px] border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full h-11 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30 focus:border-foreground/30 transition-colors"
                 />
               </div>
             </div>
           </section>
 
           {/* Save button */}
-          <div className="flex justify-end gap-2 pt-2 border-t border-border/60">
+          <div className="flex justify-end gap-2 pt-2 border-t border-border">
             <button
               onClick={onClose}
-              className="h-10 px-4 rounded-xl border border-border hover:bg-muted text-sm font-medium transition"
+              className="h-10 px-4 rounded-md border border-border hover:bg-muted text-sm font-medium transition"
             >
               {t("common.close")}
             </button>
             <button
               onClick={saveSettings}
               disabled={saving}
-              className="h-10 px-4 rounded-xl aa-grad text-white text-sm font-semibold flex items-center gap-1.5 disabled:opacity-60 hover:brightness-110 transition"
+              className="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-1.5 disabled:opacity-40 hover:bg-primary/90 transition-colors"
             >
-              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+              {saving && <CircleNotch className="w-4 h-4 animate-spin" weight="bold" />}
               {t("common.save")}
             </button>
           </div>
