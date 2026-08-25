@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { verifyPassword, createToken } from '@/lib/auth'
+import { hashPassword, createToken } from '@/lib/auth'
 
 export async function POST(req: Request) {
   try {
@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     const user = await db.user.findFirst({
       where: { username, isActive: true },
     })
-    if (!user || !(await verifyPassword(password, user.password))) {
+    if (!user || user.password !== hashPassword(password)) {
       return NextResponse.json(
         { error: 'Invalid credentials' },
         { status: 401 }
@@ -27,6 +27,7 @@ export async function POST(req: Request) {
     const token = createToken({
       userId: user.id,
       role: user.role as 'ADMIN' | 'CLIENT',
+      timestamp: Date.now(),
     })
 
     return NextResponse.json({

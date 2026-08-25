@@ -6,9 +6,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-playfair), Georgia, serif;
-  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -38,20 +38,15 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  /* AutoAuction design tokens */
-  --color-aa: var(--aa);
-  --color-aa-soft: var(--aa-soft);
-  --color-aa-ink: var(--aa-ink);
-  /* Utilitarian minimalism: crisp 8-12px radius scale, no pills on large elements */
-  --radius-sm: 6px;
+  --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;
-  --radius-xl: 12px;
+  --radius-xl: 16px;
 }
 
 :root {
-  /* Warm monochrome canvas + muted pastel accent (Pale Blue) */
-  --background: #FBFBFA;
+  /* Premium Utilitarian Minimalism — warm monochrome palette */
+  --background: #F7F6F3;
   --foreground: #111111;
   --card: #FFFFFF;
   --card-foreground: #111111;
@@ -59,167 +54,210 @@
   --popover-foreground: #111111;
   --primary: #111111;
   --primary-foreground: #FFFFFF;
-  --secondary: #F7F6F3;
-  --secondary-foreground: #2F3437;
-  --muted: #F7F6F3;
+  --secondary: #F0EFEC;
+  --secondary-foreground: #111111;
+  --muted: #F0EFEC;
   --muted-foreground: #787774;
-  --accent: #E1F3FE;
-  --accent-foreground: #1F6C9F;
+  --accent: #F0EFEC;
+  --accent-foreground: #111111;
   --destructive: #9F2F2D;
   --border: #EAEAEA;
   --input: #EAEAEA;
   --ring: #111111;
-  --aa: #1F6C9F;
-  --aa-soft: #E1F3FE;
-  --aa-ink: #2F3437;
-  --chart-1: #1F6C9F;
-  --chart-2: #346538;
-  --chart-3: #956400;
-  --chart-4: #9F2F2D;
-  --chart-5: #787774;
+
+  /* Muted pastel accents (semantic only) */
+  --pale-red-bg: #FDEBEC;
+  --pale-red-text: #9F2F2D;
+  --pale-blue-bg: #E1F3FE;
+  --pale-blue-text: #1F6C9F;
+  --pale-green-bg: #EDF3EC;
+  --pale-green-text: #346538;
+  --pale-yellow-bg: #FBF3DB;
+  --pale-yellow-text: #956400;
+  --pale-purple-bg: #F0EAFA;
+  --pale-purple-text: #5B3E9F;
+  --pale-cyan-bg: #E0F5F6;
+  --pale-cyan-text: #1F6C7A;
+  --pale-indigo-bg: #E8EAF6;
+  --pale-indigo-text: #3A3E9F;
+
+  --chart-1: #9F2F2D;
+  --chart-2: #1F6C9F;
+  --chart-3: #346538;
+  --chart-4: #956400;
+  --chart-5: #5B3E9F;
+
   --sidebar: #FFFFFF;
   --sidebar-foreground: #111111;
   --sidebar-primary: #111111;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #E1F3FE;
-  --sidebar-accent-foreground: #1F6C9F;
+  --sidebar-accent: #F0EFEC;
+  --sidebar-accent-foreground: #111111;
   --sidebar-border: #EAEAEA;
   --sidebar-ring: #111111;
 }
 
 .dark {
-  --background: #17181A;
-  --foreground: #EDECE9;
-  --card: #1F2023;
-  --card-foreground: #EDECE9;
-  --popover: #1F2023;
-  --popover-foreground: #EDECE9;
-  --primary: #EDECE9;
-  --primary-foreground: #17181A;
-  --secondary: #232427;
-  --secondary-foreground: #EDECE9;
-  --muted: #232427;
-  --muted-foreground: #9A988F;
-  --accent: #1B2C36;
-  --accent-foreground: #7FC1EE;
-  --destructive: #E5827F;
-  --border: #2C2D30;
-  --input: #2C2D30;
-  --ring: #EDECE9;
-  --aa: #7FC1EE;
-  --aa-soft: #1B2C36;
-  --aa-ink: #D8ECFB;
-  --sidebar: #1F2023;
-  --sidebar-foreground: #EDECE9;
-  --sidebar-primary: #EDECE9;
-  --sidebar-primary-foreground: #17181A;
-  --sidebar-accent: #1B2C36;
-  --sidebar-accent-foreground: #7FC1EE;
-  --sidebar-border: #2C2D30;
-  --sidebar-ring: #EDECE9;
+  --background: #111111;
+  --foreground: #F7F6F3;
+  --card: #1A1A1A;
+  --card-foreground: #F7F6F3;
+  --popover: #1A1A1A;
+  --popover-foreground: #F7F6F3;
+  --primary: #F7F6F3;
+  --primary-foreground: #111111;
+  --secondary: #2A2A2A;
+  --secondary-foreground: #F7F6F3;
+  --muted: #2A2A2A;
+  --muted-foreground: #A0A0A0;
+  --accent: #2A2A2A;
+  --accent-foreground: #F7F6F3;
+  --destructive: #FDEBEC;
+  --border: rgba(255,255,255,0.08);
+  --input: rgba(255,255,255,0.08);
+  --ring: #F7F6F3;
+  --sidebar: #1A1A1A;
+  --sidebar-foreground: #F7F6F3;
+  --sidebar-primary: #F7F6F3;
+  --sidebar-primary-foreground: #111111;
+  --sidebar-accent: #2A2A2A;
+  --sidebar-accent-foreground: #F7F6F3;
+  --sidebar-border: rgba(255,255,255,0.08);
+  --sidebar-ring: #F7F6F3;
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
+    outline-color: var(--ring);
   }
-  html,
+  html {
+    color-scheme: light;
+    -webkit-tap-highlight-color: rgba(0,0,0,0.06);
+  }
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "cv11", "ss01";
+    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    touch-action: manipulation;
   }
-  /* Hide scrollbars but keep scrolling */
-  .scroll-slim::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+
+  /* Inputs: 8px radius, not 25px — per minimalism protocol */
+  input,
+  textarea,
+  select {
+    border-radius: 8px;
   }
-  .scroll-slim::-webkit-scrollbar-thumb {
-    background: rgba(17, 17, 17, 0.14);
-    border-radius: 9999px;
+  input[type="checkbox"],
+  input[type="radio"] {
+    border-radius: 4px;
   }
-  .scroll-slim::-webkit-scrollbar-track {
-    background: transparent;
+
+  /* Focus: visible ring, not outline:none */
+  *:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
   }
+
+  /* Scrollbar */
+  .scroll-slim::-webkit-scrollbar { width: 4px; height: 4px; }
+  .scroll-slim::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 4px; }
+  .scroll-slim::-webkit-scrollbar-track { background: transparent; }
 }
 
-/* AutoAuction utility classes — flat, bordered, no gradients, no glow */
+/* Components — flat, 1px solid #EAEAEA, no shadows */
 .aa-card {
-  border-radius: 12px;
   background: var(--card);
   border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: border-color 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .aa-card-hover:hover {
-  box-shadow: 0 2px 8px rgba(17, 17, 17, 0.04);
-  border-color: rgba(17, 17, 17, 0.12);
+  border-color: #D1D0CD;
 }
 
 .aa-soft {
-  background: var(--card);
-  border-radius: 10px;
+  background: var(--secondary);
+  border-radius: 12px;
+}
+
+/* Primary button: solid #111111, 6px radius, no shadow */
+.aa-btn {
+  background: #111111;
+  color: #FFFFFF;
+  border-radius: 6px;
+  transition: background 150ms ease;
+}
+.aa-btn:hover {
+  background: #333333;
+}
+.aa-btn:active {
+  transform: scale(0.98);
+}
+
+/* Ghost button */
+.aa-btn-ghost {
+  background: transparent;
+  color: var(--foreground);
   border: 1px solid var(--border);
+  border-radius: 6px;
+  transition: background 150ms ease;
+}
+.aa-btn-ghost:hover {
+  background: var(--secondary);
 }
 
-.aa-mark {
-  background: var(--foreground);
+/* Destructive button */
+.aa-btn-destructive {
+  background: transparent;
+  color: var(--destructive);
+  border: 1px solid var(--pale-red-bg);
+  border-radius: 6px;
+  transition: background 150ms ease;
+}
+.aa-btn-destructive:hover {
+  background: var(--pale-red-bg);
 }
 
+/* Keystroke / monospace */
 .aa-mono {
   font-family: var(--font-mono);
   font-feature-settings: "tnum";
 }
 
-.aa-serif {
-  font-family: var(--font-serif);
-  letter-spacing: -0.02em;
-  line-height: 1.15;
+/* Tags / badges: pill-shaped, muted pastels */
+.aa-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
-/* Pulsing status for PENDING / WAITING-like statuses — restrained, monochrome-safe */
-@keyframes aa-pulse {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(149, 100, 0, 0.35);
-  }
-  50% {
-    box-shadow: 0 0 0 5px rgba(149, 100, 0, 0);
-  }
-}
-
-.aa-pulse {
-  animation: aa-pulse 1.8s ease-in-out infinite;
-}
-
-@keyframes aa-pulse-won {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(52, 101, 56, 0.35);
-  }
-  50% {
-    box-shadow: 0 0 0 5px rgba(52, 101, 56, 0);
-  }
-}
-
-.aa-pulse-won {
-  animation: aa-pulse-won 2.2s ease-in-out infinite;
-}
-
-/* Mobile bottom-sheet modal */
+/* Drag handle for bottom-sheet modals */
 .aa-sheet {
   border-radius: 12px 12px 0 0;
 }
 
-/* Reduce motion for users that prefer it */
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .aa-pulse,
-  .aa-pulse-won {
-    animation: none;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
-/* iOS Safari auto-zooms on input focus when font-size < 16px. */
+/* Mobile: 16px font for inputs (prevent zoom) */
 @media (max-width: 768px) {
-  input,
-  textarea,
-  select {
+  input, textarea, select {
     font-size: 16px !important;
   }
 }

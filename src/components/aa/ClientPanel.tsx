@@ -18,8 +18,7 @@ import {
   FileText,
   Calendar,
   Coins,
-  Cube,
-} from "@phosphor-icons/react";
+} from "@phosphor-icons/react/dist/ssr";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { AppShell, type Tab } from "./AppShell";
@@ -148,9 +147,9 @@ export function ClientPanel() {
   });
 
   const tabs: Tab[] = [
-    { key: "myLots", label: t("nav.myLots"), icon: <ListChecks className="w-4 h-4" /> },
-    { key: "wonLots", label: t("nav.wonLots"), icon: <Trophy className="w-4 h-4" /> },
-    { key: "delivery", label: t("nav.delivery"), icon: <Truck className="w-4 h-4" /> },
+    { key: "myLots", label: t("nav.myLots"), icon: <ListChecks size={16} weight="bold" aria-hidden="true" /> },
+    { key: "wonLots", label: t("nav.wonLots"), icon: <Trophy size={16} weight="bold" aria-hidden="true" /> },
+    { key: "delivery", label: t("nav.delivery"), icon: <Truck size={16} weight="bold" aria-hidden="true" /> },
   ];
 
   // --- Multiple-lots form helpers ---
@@ -260,8 +259,8 @@ export function ClientPanel() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <CircleNotch className="w-8 h-8 animate-spin text-primary" />
+      <div className="min-h-screen flex items-center justify-center bg-[#F7F6F3]">
+        <CircleNotch size={32} weight="bold" aria-hidden="true" className="animate-spin text-[#111111]" />
       </div>
     );
   }
@@ -275,25 +274,35 @@ export function ClientPanel() {
       onTabChange={setActiveTab}
       fab={
         activeTab === "myLots"
-          ? { label: t("lots.add"), icon: <Plus className="w-5 h-5" />, onClick: () => setShowAdd(true) }
+          ? { label: t("lots.add"), icon: <Plus size={20} weight="bold" aria-hidden="true" />, onClick: () => setShowAdd(true) }
           : undefined
       }
     >
       {activeTab === "myLots" && (
         <div>
           <div className="hidden md:flex items-center justify-between mb-6">
-            <h1 className="aa-serif text-2xl font-semibold">{t("nav.myLots")}</h1>
+            <h1 className="text-2xl font-bold text-[#111111]" style={{ fontFamily: "var(--font-playfair)" }}>
+              {t("nav.myLots")}
+            </h1>
             <button
               onClick={() => setShowAdd(true)}
-              className="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-1.5 hover:bg-primary/90 transition-colors"
+              className="h-10 px-4 rounded-[6px] bg-[#111111] text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-[#333333] active:scale-[0.98] disabled:opacity-40 transition"
             >
-              <Plus className="w-4 h-4" /> {t("lots.add")}
+              <Plus size={16} weight="bold" aria-hidden="true" /> {t("lots.add")}
             </button>
           </div>
-          <h1 className="aa-serif md:hidden text-xl font-semibold mb-4">{t("nav.myLots")}</h1>
+          <h1
+            className="md:hidden text-xl font-bold mb-4 text-[#111111]"
+            style={{ fontFamily: "var(--font-playfair)" }}
+          >
+            {t("nav.myLots")}
+          </h1>
 
           {lots.length === 0 ? (
-            <EmptyState icon={<Package className="w-10 h-10 text-muted-foreground" />} text={t("lots.noLots")} />
+            <EmptyState
+              icon={<Package size={40} weight="bold" aria-hidden="true" className="text-[#787774]" />}
+              text={t("lots.noLots")}
+            />
           ) : (
             <MyLotsGrouped
               lots={lots}
@@ -306,19 +315,27 @@ export function ClientPanel() {
 
       {activeTab === "wonLots" && (
         <div>
-          <h1 className="aa-serif text-2xl font-semibold mb-6">{t("nav.wonLots")}</h1>
+          <h1
+            className="text-2xl font-bold mb-6 text-[#111111]"
+            style={{ fontFamily: "var(--font-playfair)" }}
+          >
+            {t("nav.wonLots")}
+          </h1>
           {wonLots.length === 0 ? (
-            <EmptyState icon={<Trophy className="w-10 h-10 text-muted-foreground" />} text={t("wonLots.noWonLots")} />
+            <EmptyState
+              icon={<Trophy size={40} weight="bold" aria-hidden="true" className="text-[#787774]" />}
+              text={t("wonLots.noWonLots")}
+            />
           ) : (
             <motion.div
               variants={containerVariants}
               initial="hidden"
               animate="visible"
-              className="aa-card overflow-hidden"
+              className="bg-white rounded-[12px] border border-[#EAEAEA] overflow-hidden"
             >
               <div className="overflow-x-auto scroll-slim">
                 <table className="w-full text-sm">
-                  <thead className="bg-muted/50 text-muted-foreground text-xs uppercase">
+                  <thead className="bg-[#F0EFEC] text-[#787774] text-xs uppercase">
                     <tr>
                       <th className="text-left px-4 py-3">{t("lots.lotNumber")}</th>
                       <th className="text-left px-4 py-3 hidden sm:table-cell">{t("lots.rawText")}</th>
@@ -333,22 +350,22 @@ export function ClientPanel() {
                         <motion.tr
                           key={wl.id}
                           variants={itemVariants}
-                          className="border-t border-border/60 hover:bg-muted/30 transition"
+                          className="border-t border-[#EAEAEA] hover:bg-[#F7F6F3] transition"
                         >
-                          <td className="px-4 py-3 aa-mono font-bold text-primary">
+                          <td className="px-4 py-3 font-mono font-bold text-[#111111]">
                             #{wl.lot.lotNumber}
                           </td>
-                          <td className="px-4 py-3 text-muted-foreground max-w-xs truncate hidden sm:table-cell">
+                          <td className="px-4 py-3 text-[#787774] max-w-xs truncate hidden sm:table-cell">
                             {wl.lot.rawText || "—"}
                           </td>
-                          <td className="px-4 py-3 text-right aa-mono font-semibold">
+                          <td className="px-4 py-3 text-right font-mono font-semibold text-[#111111]">
                             {wl.price ? wl.price.toLocaleString() : "—"}{" "}
-                            <span className="text-xs text-muted-foreground">{t("wonLots.currency")}</span>
+                            <span className="text-xs text-[#787774]">{t("wonLots.currency")}</span>
                           </td>
                           <td className="px-4 py-3">
                             {hasDelivery ? (
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#EDF3EC] text-[#346538] border border-[#D8E6D6] text-xs font-semibold">
-                                <Check className="w-3.5 h-3.5" />
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] bg-[#F0EFEC] text-[#111111] border border-[#EAEAEA] text-xs font-semibold">
+                                <Check size={14} weight="bold" aria-hidden="true" />
                                 {t("delivery.choosen")}
                               </span>
                             ) : (
@@ -359,9 +376,10 @@ export function ClientPanel() {
                                   setOwnerFullName("");
                                   setOwnerAddress("");
                                 }}
-                                className="text-xs h-8 px-3 rounded-lg border border-border hover:bg-muted hover:border-primary/40 font-medium flex items-center gap-1 transition"
+                                aria-label={t("delivery.chooseMethod")}
+                                className="text-xs h-8 px-3 rounded-[6px] border border-[#EAEAEA] hover:bg-[#F0EFEC] font-medium flex items-center gap-1 transition"
                               >
-                                <Truck className="w-3 h-3" /> {t("delivery.chooseMethod")}
+                                <Truck size={12} weight="bold" aria-hidden="true" /> {t("delivery.chooseMethod")}
                               </button>
                             )}
                           </td>
@@ -378,9 +396,17 @@ export function ClientPanel() {
 
       {activeTab === "delivery" && (
         <div>
-          <h1 className="aa-serif text-2xl font-semibold mb-6">{t("nav.delivery")}</h1>
+          <h1
+            className="text-2xl font-bold mb-6 text-[#111111]"
+            style={{ fontFamily: "var(--font-playfair)" }}
+          >
+            {t("nav.delivery")}
+          </h1>
           {wonWithDelivery.length === 0 ? (
-            <EmptyState icon={<Truck className="w-10 h-10 text-muted-foreground" />} text={t("delivery.noRequests")} />
+            <EmptyState
+              icon={<Truck size={40} weight="bold" aria-hidden="true" className="text-[#787774]" />}
+              text={t("delivery.noRequests")}
+            />
           ) : (
             <motion.div
               variants={containerVariants}
@@ -395,25 +421,25 @@ export function ClientPanel() {
                   <motion.div
                     key={wl.id}
                     variants={itemVariants}
-                    className="aa-card aa-card-hover overflow-hidden"
+                    className="bg-white rounded-[12px] border border-[#EAEAEA] hover:border-[#D1D0CD] transition overflow-hidden"
                   >
                     {/* Header */}
                     <div className="flex items-start justify-between p-5 pb-4 gap-3">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-11 h-11 rounded-md bg-foreground flex items-center justify-center flex-shrink-0">
-                          <Truck className="w-5 h-5 text-white" />
+                        <div className="w-11 h-11 rounded-[12px] bg-[#111111] flex items-center justify-center flex-shrink-0">
+                          <Truck size={20} weight="bold" aria-hidden="true" className="text-white" />
                         </div>
                         <div className="min-w-0">
-                          <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                          <div className="text-[10px] text-[#787774] uppercase tracking-wider font-semibold">
                             {t("delivery.lotNumber")}
                           </div>
-                          <div className="text-xl font-extrabold aa-mono text-primary mt-0.5 truncate">
+                          <div className="text-xl font-extrabold font-mono text-[#111111] mt-0.5 truncate">
                             #{wl.lot.lotNumber}
                           </div>
                         </div>
                       </div>
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#EDF3EC] text-[#346538] border border-[#D8E6D6] text-xs font-semibold flex-shrink-0">
-                        <Check className="w-3.5 h-3.5" />
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] bg-[#F0EFEC] text-[#111111] border border-[#EAEAEA] text-xs font-semibold flex-shrink-0">
+                        <Check size={14} weight="bold" aria-hidden="true" />
                         {t("delivery.choosen")}
                       </span>
                     </div>
@@ -422,20 +448,20 @@ export function ClientPanel() {
                     <div className="px-5 pb-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {/* Lot info */}
                       <div className="space-y-2.5">
-                        <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1 flex items-center gap-1.5">
-                          <FileText className="w-3 h-3" />
+                        <div className="text-[10px] text-[#787774] uppercase tracking-wider font-semibold mb-1 flex items-center gap-1.5">
+                          <FileText size={12} weight="bold" aria-hidden="true" />
                           {t("delivery.lotInfo")}
                         </div>
-                        <InfoRow icon={<Hash className="w-3.5 h-3.5" />} label={t("delivery.lotNumber")} value={`#${wl.lot.lotNumber}`} mono />
-                        <InfoRow icon={<Coins className="w-3.5 h-3.5" />} label={t("delivery.price")} value={wl.price ? `${wl.price.toLocaleString()} ${t("wonLots.currency")}` : "—"} mono />
-                        <InfoRow icon={<Truck className="w-3.5 h-3.5" />} label={t("delivery.method")} value={req?.method ? t(`delivery.${req.method}`) : "—"} />
-                        <InfoRow icon={<Calendar className="w-3.5 h-3.5" />} label={t("delivery.createdAt")} value={req ? new Date(req.createdAt).toLocaleString() : "—"} />
+                        <InfoRow icon={<Hash size={14} weight="bold" aria-hidden="true" />} label={t("delivery.lotNumber")} value={`#${wl.lot.lotNumber}`} mono />
+                        <InfoRow icon={<Coins size={14} weight="bold" aria-hidden="true" />} label={t("delivery.price")} value={wl.price ? `${wl.price.toLocaleString()} ${t("wonLots.currency")}` : "—"} mono />
+                        <InfoRow icon={<Truck size={14} weight="bold" aria-hidden="true" />} label={t("delivery.method")} value={req?.method ? t(`delivery.${req.method}`) : "—"} />
+                        <InfoRow icon={<Calendar size={14} weight="bold" aria-hidden="true" />} label={t("delivery.createdAt")} value={req ? new Date(req.createdAt).toLocaleString() : "—"} />
                         {wl.lot.rawText && (
-                          <div className="pt-2 mt-1 border-t border-border/60">
-                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">
+                          <div className="pt-2 mt-1 border-t border-[#EAEAEA]">
+                            <div className="text-[10px] text-[#787774] uppercase tracking-wider font-semibold mb-1">
                               {t("delivery.rawText")}
                             </div>
-                            <p className="text-xs text-foreground/80 break-words">
+                            <p className="text-xs text-[#111111]/80 break-words">
                               {wl.lot.rawText}
                             </p>
                           </div>
@@ -444,13 +470,13 @@ export function ClientPanel() {
 
                       {/* Owner data (only for DUTY) */}
                       {isDuty && (
-                        <div className="space-y-2.5 sm:border-l sm:border-border/60 sm:pl-4">
-                          <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1 flex items-center gap-1.5">
-                            <User className="w-3 h-3" />
+                        <div className="space-y-2.5 sm:border-l sm:border-[#EAEAEA] sm:pl-4">
+                          <div className="text-[10px] text-[#787774] uppercase tracking-wider font-semibold mb-1 flex items-center gap-1.5">
+                            <User size={12} weight="bold" aria-hidden="true" />
                             {t("delivery.ownerData")}
                           </div>
-                          <InfoRow icon={<User className="w-3.5 h-3.5" />} label={t("delivery.ownerFullName")} value={req?.ownerFullName || "—"} />
-                          <InfoRow icon={<MapPin className="w-3.5 h-3.5" />} label={t("delivery.ownerAddress")} value={req?.ownerAddress || "—"} />
+                          <InfoRow icon={<User size={14} weight="bold" aria-hidden="true" />} label={t("delivery.ownerFullName")} value={req?.ownerFullName || "—"} />
+                          <InfoRow icon={<MapPin size={14} weight="bold" aria-hidden="true" />} label={t("delivery.ownerAddress")} value={req?.ownerAddress || "—"} />
                         </div>
                       )}
                     </div>
@@ -467,21 +493,21 @@ export function ClientPanel() {
         open={showAdd}
         onClose={() => setShowAdd(false)}
         title={t("lots.add")}
-        size="xl"
+        size="fullscreen"
         footer={
           <>
             <button
               onClick={() => setShowAdd(false)}
-              className="h-10 px-4 rounded-md border border-border hover:bg-muted text-sm font-medium transition"
+              className="h-10 px-4 rounded-[6px] border border-[#EAEAEA] hover:bg-[#F0EFEC] text-sm font-medium transition"
             >
               {t("common.cancel")}
             </button>
             <button
               onClick={submitLots}
               disabled={submitting || validLots.length === 0}
-              className="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-1.5 disabled:opacity-40 transition-colors hover:bg-primary/90"
+              className="h-10 px-4 rounded-[6px] bg-[#111111] text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-[#333333] active:scale-[0.98] disabled:opacity-40 transition"
             >
-              {submitting && <CircleNotch className="w-4 h-4 animate-spin" />}
+              {submitting && <CircleNotch size={16} weight="bold" aria-hidden="true" className="animate-spin" />}
               {t("lots.saveN").replace("{n}", String(validLots.length))}
             </button>
           </>
@@ -501,16 +527,16 @@ export function ClientPanel() {
                   className="space-y-1.5"
                 >
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    <label className="text-xs font-semibold text-[#787774] uppercase tracking-wide">
                       {t("lots.lotN").replace("{n}", String(idx + 1))}
                     </label>
                     {lotEntries.length > 1 && (
                       <button
                         onClick={() => removeLotEntry(idx)}
-                        className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-0.5 transition"
                         aria-label={t("lots.removeLot")}
+                        className="text-xs text-[#787774] hover:text-[#111111] flex items-center gap-0.5 transition"
                       >
-                        <X className="w-3 h-3" />
+                        <X size={12} weight="bold" aria-hidden="true" />
                       </button>
                     )}
                   </div>
@@ -521,13 +547,13 @@ export function ClientPanel() {
                       placeholder={t("lots.lotTextPlaceholder")}
                       rows={2}
                       autoFocus={idx === 0}
-                      className="flex-1 rounded-md border border-input bg-background p-3 text-sm font-medium focus:outline-none focus:ring-1 focus:ring-foreground/30 focus:border-foreground/30 transition-colors resize-none"
+                      className="flex-1 rounded-[8px] border border-[#EAEAEA] bg-white p-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#111111] focus:border-transparent resize-none"
                     />
                   </div>
                   {entry.trim() && (
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-[#787774]">
                       {t("lots.lotNumber")}:{" "}
-                      <span className="aa-mono font-bold text-primary">
+                      <span className="font-mono font-bold text-[#111111]">
                         {lotNum ? `#${lotNum}` : "—"}
                       </span>
                     </p>
@@ -540,15 +566,15 @@ export function ClientPanel() {
           {/* Add another lot button */}
           <button
             onClick={addLotEntry}
-            className="w-full h-11 rounded-md border-2 border-dashed border-border hover:border-primary/40 hover:bg-accent/40 text-sm font-medium text-muted-foreground hover:text-primary flex items-center justify-center gap-1.5 transition"
+            className="w-full h-11 rounded-[8px] border-2 border-dashed border-[#EAEAEA] hover:border-[#D1D0CD] hover:bg-[#F0EFEC] text-sm font-medium text-[#787774] hover:text-[#111111] flex items-center justify-center gap-1.5 transition"
           >
-            <Plus className="w-4 h-4" />
+            <Plus size={16} weight="bold" aria-hidden="true" />
             {t("lots.addAnother")}
           </button>
 
           {/* Separator */}
-          <div className="border-t border-border/60 pt-4 space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          <div className="border-t border-[#EAEAEA] pt-4 space-y-1.5">
+            <label className="text-xs font-semibold text-[#787774] uppercase tracking-wide">
               {t("lots.commentAll")}
             </label>
             <textarea
@@ -556,7 +582,7 @@ export function ClientPanel() {
               onChange={(e) => setLotComment(e.target.value)}
               placeholder={t("lots.commentAllPlaceholder")}
               rows={2}
-              className="w-full rounded-md border border-input bg-background p-3 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30 focus:border-foreground/30 transition-colors resize-none"
+              className="w-full rounded-[8px] border border-[#EAEAEA] bg-white p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#111111] focus:border-transparent resize-none"
             />
           </div>
         </div>
@@ -572,13 +598,13 @@ export function ClientPanel() {
           <>
             <button
               onClick={() => setDeliveryWonLot(null)}
-              className="h-10 px-4 rounded-md border border-border hover:bg-muted text-sm font-medium transition"
+              className="h-10 px-4 rounded-[6px] border border-[#EAEAEA] hover:bg-[#F0EFEC] text-sm font-medium transition"
             >
               {t("common.cancel")}
             </button>
             <button
               onClick={submitDelivery}
-              className="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-semibold transition-colors hover:bg-primary/90"
+              className="h-10 px-4 rounded-[6px] bg-[#111111] text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-[#333333] active:scale-[0.98] disabled:opacity-40 transition"
             >
               {t("common.save")}
             </button>
@@ -587,15 +613,15 @@ export function ClientPanel() {
       >
         <div className="space-y-4">
           {deliveryWonLot && (
-            <div className="text-sm text-muted-foreground">
+            <div className="text-sm text-[#787774]">
               {t("lots.lotNumber")}:{" "}
-              <span className="aa-mono font-bold text-primary text-base">
+              <span className="font-mono font-bold text-[#111111] text-base">
                 #{deliveryWonLot.lot.lotNumber}
               </span>
             </div>
           )}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            <label className="text-xs font-semibold text-[#787774] uppercase tracking-wide">
               {t("delivery.method")}
             </label>
             <div className="grid grid-cols-1 gap-2">
@@ -603,10 +629,10 @@ export function ClientPanel() {
                 <button
                   key={m}
                   onClick={() => setDeliveryMethod(m)}
-                  className={`text-left p-3 rounded-md border text-sm font-medium transition ${
+                  className={`text-left p-3 rounded-[8px] border text-sm font-medium transition ${
                     deliveryMethod === m
-                      ? "border-primary bg-accent text-accent-foreground shadow-sm"
-                      : "border-border hover:bg-muted hover:border-primary/30"
+                      ? "border-[#111111] bg-[#F0EFEC] text-[#111111]"
+                      : "border-[#EAEAEA] hover:bg-[#F0EFEC] hover:border-[#D1D0CD]"
                   }`}
                 >
                   {t(`delivery.${m}`)}
@@ -621,7 +647,7 @@ export function ClientPanel() {
               className="space-y-3"
             >
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                <label className="text-xs font-semibold text-[#787774] uppercase tracking-wide">
                   {t("delivery.ownerFullName")} *
                 </label>
                 <input
@@ -629,11 +655,11 @@ export function ClientPanel() {
                   value={ownerFullName}
                   onChange={(e) => setOwnerFullName(e.target.value)}
                   placeholder={t("delivery.ownerFullNamePlaceholder")}
-                  className="w-full h-11 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30 focus:border-foreground/30 transition-colors"
+                  className="w-full h-11 rounded-[8px] border border-[#EAEAEA] bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#111111] focus:border-transparent"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                <label className="text-xs font-semibold text-[#787774] uppercase tracking-wide">
                   {t("delivery.ownerAddress")} *
                 </label>
                 <input
@@ -641,7 +667,7 @@ export function ClientPanel() {
                   value={ownerAddress}
                   onChange={(e) => setOwnerAddress(e.target.value)}
                   placeholder={t("delivery.ownerAddressPlaceholder")}
-                  className="w-full h-11 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30 focus:border-foreground/30 transition-colors"
+                  className="w-full h-11 rounded-[8px] border border-[#EAEAEA] bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#111111] focus:border-transparent"
                 />
               </div>
             </motion.div>
@@ -654,9 +680,9 @@ export function ClientPanel() {
 
 function EmptyState({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (
-    <div className="aa-card p-12 flex flex-col items-center justify-center text-center">
+    <div className="bg-white rounded-[12px] border border-[#EAEAEA] p-12 flex flex-col items-center justify-center text-center">
       {icon}
-      <p className="text-sm text-muted-foreground mt-3">{text}</p>
+      <p className="text-sm text-[#787774] mt-3">{text}</p>
     </div>
   );
 }
@@ -716,18 +742,18 @@ function MyLotsGrouped({
             {/* Kit header */}
             {isKit && (
               <div className="flex items-center gap-2.5 px-2">
-                <div className="w-7 h-7 rounded-lg bg-accent text-accent-foreground flex items-center justify-center flex-shrink-0">
-                  <Cube className="w-4 h-4" />
+                <div className="w-7 h-7 rounded-[8px] bg-[#F0EFEC] text-[#111111] flex items-center justify-center flex-shrink-0">
+                  <Package size={16} weight="bold" aria-hidden="true" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                  <div className="text-[10px] text-[#787774] uppercase tracking-wider font-semibold">
                     {t("lots.kit")}
                   </div>
-                  <div className="text-sm font-semibold text-foreground truncate">
-                    💬 {group.comment}
+                  <div className="text-sm font-semibold text-[#111111] truncate">
+                    {group.comment}
                   </div>
                 </div>
-                <span className="ml-auto text-xs text-muted-foreground aa-mono">
+                <span className="ml-auto text-xs text-[#787774] font-mono">
                   {group.lots.length} {t("lots.kitLots")}
                 </span>
               </div>
@@ -741,39 +767,40 @@ function MyLotsGrouped({
                   layout
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="aa-card aa-card-hover p-5"
+                  className="bg-white rounded-[12px] border border-[#EAEAEA] hover:border-[#D1D0CD] transition p-5"
                 >
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div>
-                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                      <div className="text-[10px] text-[#787774] uppercase tracking-wider font-semibold">
                         {t("lots.lotNumber")}
                       </div>
-                      <div className="text-2xl font-extrabold aa-mono text-primary mt-0.5">
+                      <div className="text-2xl font-extrabold font-mono text-[#111111] mt-0.5">
                         #{lot.lotNumber}
                       </div>
                     </div>
                     <StatusBadge status={lot.status} label={t(`status.${lot.status}`)} />
                   </div>
                   {lot.rawText && (
-                    <p className="text-sm text-foreground mb-2 break-words">
+                    <p className="text-sm text-[#111111] mb-2 break-words">
                       {lot.rawText}
                     </p>
                   )}
                   {/* For single lots (no kit) show comment inline */}
                   {!isKit && lot.comment && (
-                    <p className="text-xs text-muted-foreground italic bg-muted/40 rounded-lg px-2.5 py-1.5">
-                      💬 {lot.comment}
+                    <p className="text-xs text-[#787774] italic bg-[#F0EFEC] rounded-[6px] px-2.5 py-1.5">
+                      {lot.comment}
                     </p>
                   )}
-                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/60">
-                    <span className="text-xs text-muted-foreground">
+                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-[#EAEAEA]">
+                    <span className="text-xs text-[#787774]">
                       {new Date(lot.createdAt).toLocaleDateString()}
                     </span>
                     <button
                       onClick={() => onDelete(lot.id)}
-                      className="text-xs text-destructive hover:underline flex items-center gap-1 transition"
+                      aria-label={t("common.delete")}
+                      className="text-xs text-[#787774] hover:text-[#111111] flex items-center gap-1 transition"
                     >
-                      <Trash className="w-3 h-3" /> {t("common.delete")}
+                      <Trash size={12} weight="bold" aria-hidden="true" /> {t("common.delete")}
                     </button>
                   </div>
                 </motion.div>
@@ -799,14 +826,14 @@ function InfoRow({
 }) {
   return (
     <div className="flex items-start gap-2.5">
-      <div className="w-6 h-6 rounded-md bg-muted/60 flex items-center justify-center flex-shrink-0 mt-0.5 text-muted-foreground">
+      <div className="w-6 h-6 rounded-[6px] bg-[#F0EFEC] flex items-center justify-center flex-shrink-0 mt-0.5 text-[#787774]">
         {icon}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+        <div className="text-[10px] text-[#787774] uppercase tracking-wider font-semibold">
           {label}
         </div>
-        <div className={`text-sm text-foreground break-words ${mono ? "aa-mono font-semibold" : "font-medium"}`}>
+        <div className={`text-sm text-[#111111] break-words ${mono ? "font-mono font-semibold" : "font-medium"}`}>
           {value}
         </div>
       </div>

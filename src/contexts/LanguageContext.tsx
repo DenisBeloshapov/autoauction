@@ -79,6 +79,7 @@ const translations: Record<Language, Record<string, string>> = {
     "wonLots.price": "Цена",
     "wonLots.currency": "JPY",
     "wonLots.noWonLots": "Нет выигранных лотов",
+    "wonLots.bodyNumber": "Номер кузова / описание",
 
     // delivery (13)
     "delivery.title": "Доставка",
@@ -94,9 +95,9 @@ const translations: Record<Language, Record<string, string>> = {
     "delivery.CUT_REAR_ARCS": "Резка задних арок",
     "delivery.chooseMethod": "Выбрать доставку",
     "delivery.noRequests": "Нет запросов на доставку",
-    "delivery.searchPlaceholder": "Поиск по номеру лота, клиенту...",
+    "delivery.searchPlaceholder": "Введите номер кузова или номер лота (несколько — через запятую)",
     "delivery.found": "Найдено",
-    "delivery.noSearchResults": "По вашему запросу ничего не найдено",
+    "delivery.noSearchResults": "Ничего не найдено",
 
     // email (8)
     "email.sendSelected": "Отправить selected",
@@ -176,7 +177,6 @@ const translations: Record<Language, Record<string, string>> = {
     "wonLots.notFound": "не найден",
     "wonLots.empty": "Введите результаты торгов для предпросмотра",
     "wonLots.confirmSave": "Подтвердить и сохранить",
-    "wonLots.bodyNumber": "Номер кузова",
   },
   en: {
     // auth (6)
@@ -249,6 +249,7 @@ const translations: Record<Language, Record<string, string>> = {
     "wonLots.price": "Price",
     "wonLots.currency": "JPY",
     "wonLots.noWonLots": "No won lots yet",
+    "wonLots.bodyNumber": "Body number / description",
 
     // delivery (13)
     "delivery.title": "Delivery",
@@ -264,9 +265,9 @@ const translations: Record<Language, Record<string, string>> = {
     "delivery.CUT_REAR_ARCS": "Rear arcs cut",
     "delivery.chooseMethod": "Choose delivery",
     "delivery.noRequests": "No delivery requests",
-    "delivery.searchPlaceholder": "Search by lot number, client...",
+    "delivery.searchPlaceholder": "Enter body number or lot number (multiple — comma separated)",
     "delivery.found": "Found",
-    "delivery.noSearchResults": "No results found",
+    "delivery.noSearchResults": "Nothing found",
 
     // email (8)
     "email.sendSelected": "Send selected",
@@ -345,7 +346,6 @@ const translations: Record<Language, Record<string, string>> = {
     "wonLots.notFound": "not found",
     "wonLots.empty": "Paste auction results to see preview",
     "wonLots.confirmSave": "Confirm and save",
-    "wonLots.bodyNumber": "Body number",
   },
 };
 

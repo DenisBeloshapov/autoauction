@@ -9,10 +9,7 @@ export function LanguageToggle({ className }: { className?: string }) {
   const langs: Language[] = ["ru", "en"];
   return (
     <div
-      className={cn(
-        "inline-flex p-1 rounded-full bg-muted border border-border text-xs font-semibold",
-        className
-      )}
+      className={cn("inline-flex border border-[#EAEAEA] rounded-[6px] overflow-hidden text-xs font-semibold", className)}
       role="group"
       aria-label="Language toggle"
     >
@@ -21,10 +18,10 @@ export function LanguageToggle({ className }: { className?: string }) {
           key={l}
           onClick={() => setLang(l)}
           className={cn(
-            "px-3 py-1.5 rounded-full transition uppercase",
+            "px-3 py-1.5 transition uppercase",
             lang === l
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:text-foreground"
+              ? "bg-[#111111] text-white"
+              : "text-[#787774] hover:text-[#111111] hover:bg-[#F0EFEC]"
           )}
           aria-pressed={lang === l}
         >

@@ -1,28 +1,29 @@
-// AutoAuction — schema v1.0
-// 5 сущностей: User, Lot, WonLot, DeliveryRequest, EmailBatch
+// AutoAuction — schema for LOCAL development (SQLite)
+// Используется скриптом run-local.ps1 для локального запуска.
+// На Vercel используется prisma/schema.prisma (PostgreSQL).
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
 model User {
   id        String   @id @default(cuid())
   username  String   @unique
-  password  String // SHA-256 hash
+  password  String // bcrypt hash
   name      String?
   email     String?
-  role      String   @default("CLIENT") // ADMIN | CLIENT
+  role      String   @default("CLIENT")
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  lots           Lot[]
-  deliveryReqs   DeliveryRequest[]
+  lots         Lot[]
+  deliveryReqs DeliveryRequest[]
 }
 
 model Lot {
@@ -34,10 +35,9 @@ model Lot {
   carModel     String?
   auctionDate  String   @default("")
   comment      String?
-  status       String   @default("PENDING") // PENDING | SENT | WON | PROCESSING
+  status       String   @default("PENDING")
   clientId     String
   emailBatchId String?
-  wonLotId     String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -61,15 +61,15 @@ model WonLot {
 }
 
 model DeliveryRequest {
-  id             String   @id @default(cuid())
-  wonLotId       String
-  clientId       String
-  method         String? // DUTY | DISASSEMBLY | CUT_REAR | CUT_FRONT | CUT_REAR_ARCS
-  ownerFullName  String?
-  ownerAddress   String?
-  status         String   @default("PENDING")
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id            String   @id @default(cuid())
+  wonLotId      String
+  clientId      String
+  method        String?
+  ownerFullName String?
+  ownerAddress  String?
+  status        String   @default("PENDING")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   wonLot WonLot @relation(fields: [wonLotId], references: [id], onDelete: Cascade)
   client User   @relation(fields: [clientId], references: [id], onDelete: Cascade)

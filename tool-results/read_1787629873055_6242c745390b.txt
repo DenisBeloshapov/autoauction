@@ -1,0 +1,816 @@
+     1→     1→"use client";
+     2→     2→
+     3→     3→import React, { useState, useEffect, useCallback } from "react";
+     4→     4→import { motion } from "framer-motion";
+     5→     5→import {
+     6→     6→  ListChecks,
+     7→     7→  Trophy,
+     8→     8→  Truck,
+     9→     9→  Plus,
+    10→    10→  Trash2,
+    11→    11→  Package,
+    12→    12→  Loader2,
+    13→    13→  X,
+    14→    14→  Check,
+    15→    15→  User,
+    16→    16→  MapPin,
+    17→    17→  Hash,
+    18→    18→  FileText,
+    19→    19→  Calendar,
+    20→    20→  Coins,
+    21→    21→  Boxes,
+    22→    22→} from "lucide-react";
+    23→    23→import { useAuth } from "@/contexts/AuthContext";
+    24→    24→import { useLanguage } from "@/contexts/LanguageContext";
+    25→    25→import { AppShell, type Tab } from "./AppShell";
+    26→    26→import { Modal } from "./Modal";
+    27→    27→import { StatusBadge } from "./StatusBadge";
+    28→    28→import { toast } from "sonner";
+    29→    29→import { useRealtime } from "@/hooks/use-realtime";
+    30→    30→
+    31→    31→type Lot = {
+    32→    32→  id: string;
+    33→    33→  lotNumber: string;
+    34→    34→  rawText: string | null;
+    35→    35→  comment: string | null;
+    36→    36→  status: string;
+    37→    37→  createdAt: string;
+    38→    38→  client: { id: string; name: string | null; username: string };
+    39→    39→  wonLot: {
+    40→    40→    id: string;
+    41→    41→    price: number | null;
+    42→    42→    currency: string;
+    43→    43→    status: string;
+    44→    44→  } | null;
+    45→    45→};
+    46→    46→
+    47→    47→type WonLot = {
+    48→    48→  id: string;
+    49→    49→  price: number | null;
+    50→    50→  currency: string;
+    51→    51→  status: string;
+    52→    52→  lot: {
+    53→    53→    id: string;
+    54→    54→    lotNumber: string;
+    55→    55→    rawText: string | null;
+    56→    56→    client: { id: string; name: string | null; username: string };
+    57→    57→  };
+    58→    58→  deliveryReqs: {
+    59→    59→    id: string;
+    60→    60→    method: string | null;
+    61→    61→    status: string;
+    62→    62→    ownerFullName: string | null;
+    63→    63→    ownerAddress: string | null;
+    64→    64→    createdAt: string;
+    65→    65→  }[];
+    66→    66→};
+    67→    67→
+    68→    68→const METHODS = [
+    69→    69→  "DUTY",
+    70→    70→  "DISASSEMBLY",
+    71→    71→  "CUT_REAR",
+    72→    72→  "CUT_FRONT",
+    73→    73→  "CUT_REAR_ARCS",
+    74→    74→] as const;
+    75→    75→type Method = (typeof METHODS)[number];
+    76→    76→
+    77→    77→// Stagger animation: cards appear one after another
+    78→    78→const containerVariants = {
+    79→    79→  hidden: { opacity: 0 },
+    80→    80→  visible: {
+    81→    81→    opacity: 1,
+    82→    82→    transition: {
+    83→    83→      staggerChildren: 0.06,
+    84→    84→      delayChildren: 0.05,
+    85→    85→    },
+    86→    86→  },
+    87→    87→};
+    88→    88→
+    89→    89→const itemVariants = {
+    90→    90→  hidden: { opacity: 0, y: 18, scale: 0.98 },
+    91→    91→  visible: {
+    92→    92→    opacity: 1,
+    93→    93→    y: 0,
+    94→    94→    scale: 1,
+    95→    95→    transition: { type: "spring", damping: 22, stiffness: 280 },
+    96→    96→  },
+    97→    97→};
+    98→    98→
+    99→    99→export function ClientPanel() {
+   100→   100→  const { t } = useLanguage();
+   101→   101→  const [activeTab, setActiveTab] = useState("myLots");
+   102→   102→  const [lots, setLots] = useState<Lot[]>([]);
+   103→   103→  const [wonLots, setWonLots] = useState<WonLot[]>([]);
+   104→   104→  const [loading, setLoading] = useState(true);
+   105→   105→  const [showAdd, setShowAdd] = useState(false);
+   106→   106→  const [lotEntries, setLotEntries] = useState<string[]>([""]);
+   107→   107→  const [lotComment, setLotComment] = useState("");
+   108→   108→  const [submitting, setSubmitting] = useState(false);
+   109→   109→
+   110→   110→  // Delivery modal state
+   111→   111→  const [deliveryWonLot, setDeliveryWonLot] = useState<WonLot | null>(null);
+   112→   112→  const [deliveryMethod, setDeliveryMethod] = useState<Method>("DUTY");
+   113→   113→  const [ownerFullName, setOwnerFullName] = useState("");
+   114→   114→  const [ownerAddress, setOwnerAddress] = useState("");
+   115→   115→
+   116→   116→  const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
+   117→   117→  const authHeaders: HeadersInit = token
+   118→   118→    ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
+   119→   119→    : { "Content-Type": "application/json" };
+   120→   120→
+   121→   121→  const loadData = useCallback(async () => {
+   122→   122→    setLoading(true);
+   123→   123→    try {
+   124→   124→      const [lotsRes, wonRes] = await Promise.all([
+   125→   125→        fetch("/api/lots", { headers: authHeaders }),
+   126→   126→        fetch("/api/won-lots", { headers: authHeaders }),
+   127→   127→      ]);
+   128→   128→      if (lotsRes.ok) {
+   129→   129→        const data = await lotsRes.json();
+   130→   130→        setLots(data.lots || []);
+   131→   131→      }
+   132→   132→      if (wonRes.ok) {
+   133→   133→        const data = await wonRes.json();
+   134→   134→        setWonLots(data.wonLots || []);
+   135→   135→      }
+   136→   136→    } finally {
+   137→   137→      setLoading(false);
+   138→   138→    }
+   139→   139→  }, [token]);
+   140→   140→
+   141→   141→  useEffect(() => {
+   142→   142→    void loadData();
+   143→   143→  }, [loadData]);
+   144→   144→
+   145→   145→  // Realtime: обновляем данные при WS-событиях
+   146→   146→  useRealtime(["lot:created", "lot:updated", "lot:deleted", "wonlot:created", "delivery:created"], () => {
+   147→   147→    loadData();
+   148→   148→  });
+   149→   149→
+   150→   150→  const tabs: Tab[] = [
+   151→   151→    { key: "myLots", label: t("nav.myLots"), icon: <ListChecks className="w-4 h-4" /> },
+   152→   152→    { key: "wonLots", label: t("nav.wonLots"), icon: <Trophy className="w-4 h-4" /> },
+   153→   153→    { key: "delivery", label: t("nav.delivery"), icon: <Truck className="w-4 h-4" /> },
+   154→   154→  ];
+   155→   155→
+   156→   156→  // --- Multiple-lots form helpers ---
+   157→   157→  const addLotEntry = () => {
+   158→   158→    setLotEntries((prev) => [...prev, ""]);
+   159→   159→  };
+   160→   160→  const removeLotEntry = (idx: number) => {
+   161→   161→    setLotEntries((prev) => prev.filter((_, i) => i !== idx));
+   162→   162→  };
+   163→   163→  const updateLotEntry = (idx: number, val: string) => {
+   164→   164→    setLotEntries((prev) => prev.map((e, i) => (i === idx ? val : e)));
+   165→   165→  };
+   166→   166→
+   167→   167→  // Extract lot number from text (first number sequence)
+   168→   168→  const extractLotNumber = (text: string): string | null => {
+   169→   169→    const m = text.match(/\d{1,3}(?:,\d{3})+|\d+/);
+   170→   170→    return m ? m[0].replace(/,/g, "") : null;
+   171→   171→  };
+   172→   172→
+   173→   173→  // Valid lots = non-empty entries with an extractable lot number
+   174→   174→  const validLots = lotEntries
+   175→   175→    .map((text, idx) => ({ idx, text, lotNumber: extractLotNumber(text) }))
+   176→   176→    .filter((e) => e.text.trim() && e.lotNumber);
+   177→   177→
+   178→   178→  const submitLots = async () => {
+   179→   179→    if (validLots.length === 0) return;
+   180→   180→    setSubmitting(true);
+   181→   181→    let created = 0;
+   182→   182→    let failed = 0;
+   183→   183→    try {
+   184→   184→      for (const entry of validLots) {
+   185→   185→        const res = await fetch("/api/lots", {
+   186→   186→          method: "POST",
+   187→   187→          headers: authHeaders,
+   188→   188→          body: JSON.stringify({
+   189→   189→            lotText: entry.text,
+   190→   190→            comment: lotComment || null,
+   191→   191→          }),
+   192→   192→        });
+   193→   193→        if (res.ok) {
+   194→   194→          created++;
+   195→   195→        } else {
+   196→   196→          failed++;
+   197→   197→          const data = await res.json().catch(() => ({}));
+   198→   198→          toast.error(`#${entry.lotNumber}: ${data.error || t("common.error")}`);
+   199→   199→        }
+   200→   200→      }
+   201→   201→      if (created > 0) {
+   202→   202→        toast.success(t("lots.batchCreated").replace("{n}", String(created)));
+   203→   203→      }
+   204→   204→      if (failed === 0) {
+   205→   205→        setLotEntries([""]);
+   206→   206→        setLotComment("");
+   207→   207→        setShowAdd(false);
+   208→   208→        await loadData();
+   209→   209→      } else {
+   210→   210→        // Keep entries that failed for correction
+   211→   211→        await loadData();
+   212→   212→      }
+   213→   213→    } finally {
+   214→   214→      setSubmitting(false);
+   215→   215→    }
+   216→   216→  };
+   217→   217→
+   218→   218→  const deleteLot = async (id: string) => {
+   219→   219→    if (!confirm(t("lots.deleteConfirm"))) return;
+   220→   220→    const res = await fetch(`/api/lots?id=${id}`, {
+   221→   221→      method: "DELETE",
+   222→   222→      headers: authHeaders,
+   223→   223→    });
+   224→   224→    if (res.ok) {
+   225→   225→      toast.success(t("common.success"));
+   226→   226→      await loadData();
+   227→   227→    } else {
+   228→   228→      const data = await res.json().catch(() => ({}));
+   229→   229→      toast.error(data.error || t("common.error"));
+   230→   230→    }
+   231→   231→  };
+   232→   232→
+   233→   233→  const submitDelivery = async () => {
+   234→   234→    if (!deliveryWonLot) return;
+   235→   235→    if (deliveryMethod === "DUTY" && (!ownerFullName || !ownerAddress)) {
+   236→   236→      toast.error(t("delivery.ownerFullName") + " / " + t("delivery.ownerAddress"));
+   237→   237→      return;
+   238→   238→    }
+   239→   239→    const res = await fetch("/api/delivery", {
+   240→   240→      method: "POST",
+   241→   241→      headers: authHeaders,
+   242→   242→      body: JSON.stringify({
+   243→   243→        wonLotId: deliveryWonLot.id,
+   244→   244→        method: deliveryMethod,
+   245→   245→        ownerFullName: deliveryMethod === "DUTY" ? ownerFullName : null,
+   246→   246→        ownerAddress: deliveryMethod === "DUTY" ? ownerAddress : null,
+   247→   247→      }),
+   248→   248→    });
+   249→   249→    if (res.ok) {
+   250→   250→      toast.success(t("common.success"));
+   251→   251→      setDeliveryWonLot(null);
+   252→   252→      setOwnerFullName("");
+   253→   253→      setOwnerAddress("");
+   254→   254→      await loadData();
+   255→   255→    } else {
+   256→   256→      const data = await res.json().catch(() => ({}));
+   257→   257→      toast.error(data.error || t("common.error"));
+   258→   258→    }
+   259→   259→  };
+   260→   260→
+   261→   261→  if (loading) {
+   262→   262→    return (
+   263→   263→      <div className="min-h-screen flex items-center justify-center bg-background">
+   264→   264→        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+   265→   265→      </div>
+   266→   266→    );
+   267→   267→  }
+   268→   268→
+   269→   269→  const wonWithDelivery = wonLots.filter((w) => w.deliveryReqs.length > 0);
+   270→   270→
+   271→   271→  return (
+   272→   272→    <AppShell
+   273→   273→      tabs={tabs}
+   274→   274→      activeTab={activeTab}
+   275→   275→      onTabChange={setActiveTab}
+   276→   276→      fab={
+   277→   277→        activeTab === "myLots"
+   278→   278→          ? { label: t("lots.add"), icon: <Plus className="w-5 h-5" />, onClick: () => setShowAdd(true) }
+   279→   279→          : undefined
+   280→   280→      }
+   281→   281→    >
+   282→   282→      {activeTab === "myLots" && (
+   283→   283→        <div>
+   284→   284→          <div className="hidden md:flex items-center justify-between mb-6">
+   285→   285→            <h1 className="text-2xl font-bold">{t("nav.myLots")}</h1>
+   286→   286→            <button
+   287→   287→              onClick={() => setShowAdd(true)}
+   288→   288→              className="h-10 px-4 rounded-xl aa-grad text-white text-sm font-semibold flex items-center gap-1.5 hover:brightness-110 transition"
+   289→   289→            >
+   290→   290→              <Plus className="w-4 h-4" /> {t("lots.add")}
+   291→   291→            </button>
+   292→   292→          </div>
+   293→   293→          <h1 className="md:hidden text-xl font-bold mb-4">{t("nav.myLots")}</h1>
+   294→   294→
+   295→   295→          {lots.length === 0 ? (
+   296→   296→            <EmptyState icon={<Package className="w-10 h-10 text-muted-foreground" />} text={t("lots.noLots")} />
+   297→   297→          ) : (
+   298→   298→            <MyLotsGrouped
+   299→   299→              lots={lots}
+   300→   300→              t={t}
+   301→   301→              onDelete={deleteLot}
+   302→   302→            />
+   303→   303→          )}
+   304→   304→        </div>
+   305→   305→      )}
+   306→   306→
+   307→   307→      {activeTab === "wonLots" && (
+   308→   308→        <div>
+   309→   309→          <h1 className="text-2xl font-bold mb-6">{t("nav.wonLots")}</h1>
+   310→   310→          {wonLots.length === 0 ? (
+   311→   311→            <EmptyState icon={<Trophy className="w-10 h-10 text-muted-foreground" />} text={t("wonLots.noWonLots")} />
+   312→   312→          ) : (
+   313→   313→            <motion.div
+   314→   314→              variants={containerVariants}
+   315→   315→              initial="hidden"
+   316→   316→              animate="visible"
+   317→   317→              className="aa-card overflow-hidden"
+   318→   318→            >
+   319→   319→              <div className="overflow-x-auto scroll-slim">
+   320→   320→                <table className="w-full text-sm">
+   321→   321→                  <thead className="bg-muted/50 text-muted-foreground text-xs uppercase">
+   322→   322→                    <tr>
+   323→   323→                      <th className="text-left px-4 py-3">{t("lots.lotNumber")}</th>
+   324→   324→                      <th className="text-left px-4 py-3 hidden sm:table-cell">{t("lots.rawText")}</th>
+   325→   325→                      <th className="text-right px-4 py-3">{t("wonLots.price")}</th>
+   326→   326→                      <th className="text-left px-4 py-3">{t("common.actions")}</th>
+   327→   327→                    </tr>
+   328→   328→                  </thead>
+   329→   329→                  <tbody>
+   330→   330→                    {wonLots.map((wl) => {
+   331→   331→                      const hasDelivery = wl.deliveryReqs.length > 0;
+   332→   332→                      return (
+   333→   333→                        <motion.tr
+   334→   334→                          key={wl.id}
+   335→   335→                          variants={itemVariants}
+   336→   336→                          className="border-t border-border/60 hover:bg-muted/30 transition"
+   337→   337→                        >
+   338→   338→                          <td className="px-4 py-3 aa-mono font-bold text-primary">
+   339→   339→                            #{wl.lot.lotNumber}
+   340→   340→                          </td>
+   341→   341→                          <td className="px-4 py-3 text-muted-foreground max-w-xs truncate hidden sm:table-cell">
+   342→   342→                            {wl.lot.rawText || "—"}
+   343→   343→                          </td>
+   344→   344→                          <td className="px-4 py-3 text-right aa-mono font-semibold">
+   345→   345→                            {wl.price ? wl.price.toLocaleString() : "—"}{" "}
+   346→   346→                            <span className="text-xs text-muted-foreground">{t("wonLots.currency")}</span>
+   347→   347→                          </td>
+   348→   348→                          <td className="px-4 py-3">
+   349→   349→                            {hasDelivery ? (
+   350→   350→                              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
+   351→   351→                                <Check className="w-3.5 h-3.5" />
+   352→   352→                                {t("delivery.choosen")}
+   353→   353→                              </span>
+   354→   354→                            ) : (
+   355→   355→                              <button
+   356→   356→                                onClick={() => {
+   357→   357→                                  setDeliveryWonLot(wl);
+   358→   358→                                  setDeliveryMethod("DUTY");
+   359→   359→                                  setOwnerFullName("");
+   360→   360→                                  setOwnerAddress("");
+   361→   361→                                }}
+   362→   362→                                className="text-xs h-8 px-3 rounded-lg border border-border hover:bg-muted hover:border-primary/40 font-medium flex items-center gap-1 transition"
+   363→   363→                              >
+   364→   364→                                <Truck className="w-3 h-3" /> {t("delivery.chooseMethod")}
+   365→   365→                              </button>
+   366→   366→                            )}
+   367→   367→                          </td>
+   368→   368→                        </motion.tr>
+   369→   369→                      );
+   370→   370→                    })}
+   371→   371→                  </tbody>
+   372→   372→                </table>
+   373→   373→              </div>
+   374→   374→            </motion.div>
+   375→   375→          )}
+   376→   376→        </div>
+   377→   377→      )}
+   378→   378→
+   379→   379→      {activeTab === "delivery" && (
+   380→   380→        <div>
+   381→   381→          <h1 className="text-2xl font-bold mb-6">{t("nav.delivery")}</h1>
+   382→   382→          {wonWithDelivery.length === 0 ? (
+   383→   383→            <EmptyState icon={<Truck className="w-10 h-10 text-muted-foreground" />} text={t("delivery.noRequests")} />
+   384→   384→          ) : (
+   385→   385→            <motion.div
+   386→   386→              variants={containerVariants}
+   387→   387→              initial="hidden"
+   388→   388→              animate="visible"
+   389→   389→              className="space-y-4"
+   390→   390→            >
+   391→   391→              {wonWithDelivery.map((wl) => {
+   392→   392→                const req = wl.deliveryReqs[0];
+   393→   393→                const isDuty = req?.method === "DUTY";
+   394→   394→                return (
+   395→   395→                  <motion.div
+   396→   396→                    key={wl.id}
+   397→   397→                    variants={itemVariants}
+   398→   398→                    className="aa-card aa-card-hover overflow-hidden"
+   399→   399→                  >
+   400→   400→                    {/* Header */}
+   401→   401→                    <div className="flex items-start justify-between p-5 pb-4 gap-3">
+   402→   402→                      <div className="flex items-center gap-3 min-w-0">
+   403→   403→                        <div className="w-11 h-11 rounded-2xl aa-grad flex items-center justify-center flex-shrink-0">
+   404→   404→                          <Truck className="w-5 h-5 text-white" />
+   405→   405→                        </div>
+   406→   406→                        <div className="min-w-0">
+   407→   407→                          <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+   408→   408→                            {t("delivery.lotNumber")}
+   409→   409→                          </div>
+   410→   410→                          <div className="text-xl font-extrabold aa-mono text-primary mt-0.5 truncate">
+   411→   411→                            #{wl.lot.lotNumber}
+   412→   412→                          </div>
+   413→   413→                        </div>
+   414→   414→                      </div>
+   415→   415→                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold flex-shrink-0">
+   416→   416→                        <Check className="w-3.5 h-3.5" />
+   417→   417→                        {t("delivery.choosen")}
+   418→   418→                      </span>
+   419→   419→                    </div>
+   420→   420→
+   421→   421→                    {/* Body */}
+   422→   422→                    <div className="px-5 pb-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+   423→   423→                      {/* Lot info */}
+   424→   424→                      <div className="space-y-2.5">
+   425→   425→                        <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1 flex items-center gap-1.5">
+   426→   426→                          <FileText className="w-3 h-3" />
+   427→   427→                          {t("delivery.lotInfo")}
+   428→   428→                        </div>
+   429→   429→                        <InfoRow icon={<Hash className="w-3.5 h-3.5" />} label={t("delivery.lotNumber")} value={`#${wl.lot.lotNumber}`} mono />
+   430→   430→                        <InfoRow icon={<Coins className="w-3.5 h-3.5" />} label={t("delivery.price")} value={wl.price ? `${wl.price.toLocaleString()} ${t("wonLots.currency")}` : "—"} mono />
+   431→   431→                        <InfoRow icon={<Truck className="w-3.5 h-3.5" />} label={t("delivery.method")} value={req?.method ? t(`delivery.${req.method}`) : "—"} />
+   432→   432→                        <InfoRow icon={<Calendar className="w-3.5 h-3.5" />} label={t("delivery.createdAt")} value={req ? new Date(req.createdAt).toLocaleString() : "—"} />
+   433→   433→                        {wl.lot.rawText && (
+   434→   434→                          <div className="pt-2 mt-1 border-t border-border/60">
+   435→   435→                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">
+   436→   436→                              {t("delivery.rawText")}
+   437→   437→                            </div>
+   438→   438→                            <p className="text-xs text-foreground/80 break-words">
+   439→   439→                              {wl.lot.rawText}
+   440→   440→                            </p>
+   441→   441→                          </div>
+   442→   442→                        )}
+   443→   443→                      </div>
+   444→   444→
+   445→   445→                      {/* Owner data (only for DUTY) */}
+   446→   446→                      {isDuty && (
+   447→   447→                        <div className="space-y-2.5 sm:border-l sm:border-border/60 sm:pl-4">
+   448→   448→                          <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1 flex items-center gap-1.5">
+   449→   449→                            <User className="w-3 h-3" />
+   450→   450→                            {t("delivery.ownerData")}
+   451→   451→                          </div>
+   452→   452→                          <InfoRow icon={<User className="w-3.5 h-3.5" />} label={t("delivery.ownerFullName")} value={req?.ownerFullName || "—"} />
+   453→   453→                          <InfoRow icon={<MapPin className="w-3.5 h-3.5" />} label={t("delivery.ownerAddress")} value={req?.ownerAddress || "—"} />
+   454→   454→                        </div>
+   455→   455→                      )}
+   456→   456→                    </div>
+   457→   457→                  </motion.div>
+   458→   458→                );
+   459→   459→              })}
+   460→   460→            </motion.div>
+   461→   461→          )}
+   462→   462→        </div>
+   463→   463→      )}
+   464→   464→
+   465→   465→      {/* Add Lot Modal — multiple lots + shared comment */}
+   466→   466→      <Modal
+   467→   467→        open={showAdd}
+   468→   468→        onClose={() => setShowAdd(false)}
+   469→   469→        title={t("lots.add")}
+   470→   470→        size="fullscreen"
+   471→   471→        footer={
+   472→   472→          <>
+   473→   473→            <button
+   474→   474→              onClick={() => setShowAdd(false)}
+   475→   475→              className="h-10 px-4 rounded-xl border border-border hover:bg-muted text-sm font-medium transition"
+   476→   476→            >
+   477→   477→              {t("common.cancel")}
+   478→   478→            </button>
+   479→   479→            <button
+   480→   480→              onClick={submitLots}
+   481→   481→              disabled={submitting || validLots.length === 0}
+   482→   482→              className="h-10 px-4 rounded-xl aa-grad text-white text-sm font-semibold flex items-center gap-1.5 disabled:opacity-60 transition hover:brightness-110"
+   483→   483→            >
+   484→   484→              {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+   485→   485→              {t("lots.saveN").replace("{n}", String(validLots.length))}
+   486→   486→            </button>
+   487→   487→          </>
+   488→   488→        }
+   489→   489→      >
+   490→   490→        <div className="space-y-4">
+   491→   491→          {/* Lot entries list */}
+   492→   492→          <div className="space-y-3">
+   493→   493→            {lotEntries.map((entry, idx) => {
+   494→   494→              const lotNum = extractLotNumber(entry);
+   495→   495→              return (
+   496→   496→                <motion.div
+   497→   497→                  key={idx}
+   498→   498→                  initial={{ opacity: 0, y: 8 }}
+   499→   499→                  animate={{ opacity: 1, y: 0 }}
+   500→   500→                  transition={{ type: "spring", damping: 24, stiffness: 300 }}
+   501→   501→                  className="space-y-1.5"
+   502→   502→                >
+   503→   503→                  <div className="flex items-center justify-between">
+   504→   504→                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+   505→   505→                      {t("lots.lotN").replace("{n}", String(idx + 1))}
+   506→   506→                    </label>
+   507→   507→                    {lotEntries.length > 1 && (
+   508→   508→                      <button
+   509→   509→                        onClick={() => removeLotEntry(idx)}
+   510→   510→                        className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-0.5 transition"
+   511→   511→                        aria-label={t("lots.removeLot")}
+   512→   512→                      >
+   513→   513→                        <X className="w-3 h-3" />
+   514→   514→                      </button>
+   515→   515→                    )}
+   516→   516→                  </div>
+   517→   517→                  <div className="flex items-start gap-2">
+   518→   518→                    <textarea
+   519→   519→                      value={entry}
+   520→   520→                      onChange={(e) => updateLotEntry(idx, e.target.value)}
+   521→   521→                      placeholder={t("lots.lotTextPlaceholder")}
+   522→   522→                      rows={2}
+   523→   523→                      autoFocus={idx === 0}
+   524→   524→                      className="flex-1 rounded-xl border border-input bg-white p-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+   525→   525→                    />
+   526→   526→                  </div>
+   527→   527→                  {entry.trim() && (
+   528→   528→                    <p className="text-xs text-muted-foreground">
+   529→   529→                      {t("lots.lotNumber")}:{" "}
+   530→   530→                      <span className="aa-mono font-bold text-primary">
+   531→   531→                        {lotNum ? `#${lotNum}` : "—"}
+   532→   532→                      </span>
+   533→   533→                    </p>
+   534→   534→                  )}
+   535→   535→                </motion.div>
+   536→   536→              );
+   537→   537→            })}
+   538→   538→          </div>
+   539→   539→
+   540→   540→          {/* Add another lot button */}
+   541→   541→          <button
+   542→   542→            onClick={addLotEntry}
+   543→   543→            className="w-full h-11 rounded-xl border-2 border-dashed border-border hover:border-primary/40 hover:bg-accent/40 text-sm font-medium text-muted-foreground hover:text-primary flex items-center justify-center gap-1.5 transition"
+   544→   544→          >
+   545→   545→            <Plus className="w-4 h-4" />
+   546→   546→            {t("lots.addAnother")}
+   547→   547→          </button>
+   548→   548→
+   549→   549→          {/* Separator */}
+   550→   550→          <div className="border-t border-border/60 pt-4 space-y-1.5">
+   551→   551→            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+   552→   552→              {t("lots.commentAll")}
+   553→   553→            </label>
+   554→   554→            <textarea
+   555→   555→              value={lotComment}
+   556→   556→              onChange={(e) => setLotComment(e.target.value)}
+   557→   557→              placeholder={t("lots.commentAllPlaceholder")}
+   558→   558→              rows={2}
+   559→   559→              className="w-full rounded-xl border border-input bg-white p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+   560→   560→            />
+   561→   561→          </div>
+   562→   562→        </div>
+   563→   563→      </Modal>
+   564→   564→
+   565→   565→      {/* Delivery Modal */}
+   566→   566→      <Modal
+   567→   567→        open={!!deliveryWonLot}
+   568→   568→        onClose={() => setDeliveryWonLot(null)}
+   569→   569→        title={t("delivery.chooseMethod")}
+   570→   570→        size="md"
+   571→   571→        footer={
+   572→   572→          <>
+   573→   573→            <button
+   574→   574→              onClick={() => setDeliveryWonLot(null)}
+   575→   575→              className="h-10 px-4 rounded-xl border border-border hover:bg-muted text-sm font-medium transition"
+   576→   576→            >
+   577→   577→              {t("common.cancel")}
+   578→   578→            </button>
+   579→   579→            <button
+   580→   580→              onClick={submitDelivery}
+   581→   581→              className="h-10 px-4 rounded-xl aa-grad text-white text-sm font-semibold transition hover:brightness-110"
+   582→   582→            >
+   583→   583→              {t("common.save")}
+   584→   584→            </button>
+   585→   585→          </>
+   586→   586→        }
+   587→   587→      >
+   588→   588→        <div className="space-y-4">
+   589→   589→          {deliveryWonLot && (
+   590→   590→            <div className="text-sm text-muted-foreground">
+   591→   591→              {t("lots.lotNumber")}:{" "}
+   592→   592→              <span className="aa-mono font-bold text-primary text-base">
+   593→   593→                #{deliveryWonLot.lot.lotNumber}
+   594→   594→              </span>
+   595→   595→            </div>
+   596→   596→          )}
+   597→   597→          <div className="space-y-1.5">
+   598→   598→            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+   599→   599→              {t("delivery.method")}
+   600→   600→            </label>
+   601→   601→            <div className="grid grid-cols-1 gap-2">
+   602→   602→              {METHODS.map((m) => (
+   603→   603→                <button
+   604→   604→                  key={m}
+   605→   605→                  onClick={() => setDeliveryMethod(m)}
+   606→   606→                  className={`text-left p-3 rounded-xl border text-sm font-medium transition ${
+   607→   607→                    deliveryMethod === m
+   608→   608→                      ? "border-primary bg-accent text-accent-foreground shadow-sm"
+   609→   609→                      : "border-border hover:bg-muted hover:border-primary/30"
+   610→   610→                  }`}
+   611→   611→                >
+   612→   612→                  {t(`delivery.${m}`)}
+   613→   613→                </button>
+   614→   614→              ))}
+   615→   615→            </div>
+   616→   616→          </div>
+   617→   617→          {deliveryMethod === "DUTY" && (
+   618→   618→            <motion.div
+   619→   619→              initial={{ opacity: 0, height: 0 }}
+   620→   620→              animate={{ opacity: 1, height: "auto" }}
+   621→   621→              className="space-y-3"
+   622→   622→            >
+   623→   623→              <div className="space-y-1.5">
+   624→   624→                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+   625→   625→                  {t("delivery.ownerFullName")} *
+   626→   626→                </label>
+   627→   627→                <input
+   628→   628→                  type="text"
+   629→   629→                  value={ownerFullName}
+   630→   630→                  onChange={(e) => setOwnerFullName(e.target.value)}
+   631→   631→                  placeholder={t("delivery.ownerFullNamePlaceholder")}
+   632→   632→                  className="w-full h-11 rounded-xl border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+   633→   633→                />
+   634→   634→              </div>
+   635→   635→              <div className="space-y-1.5">
+   636→   636→                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+   637→   637→                  {t("delivery.ownerAddress")} *
+   638→   638→                </label>
+   639→   639→                <input
+   640→   640→                  type="text"
+   641→   641→                  value={ownerAddress}
+   642→   642→                  onChange={(e) => setOwnerAddress(e.target.value)}
+   643→   643→                  placeholder={t("delivery.ownerAddressPlaceholder")}
+   644→   644→                  className="w-full h-11 rounded-xl border border-input bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+   645→   645→                />
+   646→   646→              </div>
+   647→   647→            </motion.div>
+   648→   648→          )}
+   649→   649→        </div>
+   650→   650→      </Modal>
+   651→   651→    </AppShell>
+   652→   652→  );
+   653→   653→}
+   654→   654→
+   655→   655→function EmptyState({ icon, text }: { icon: React.ReactNode; text: string }) {
+   656→   656→  return (
+   657→   657→    <div className="aa-card p-12 flex flex-col items-center justify-center text-center">
+   658→   658→      {icon}
+   659→   659→      <p className="text-sm text-muted-foreground mt-3">{text}</p>
+   660→   660→    </div>
+   661→   661→  );
+   662→   662→}
+   663→   663→
+   664→   664→/** Group client lots into "kits" — sets sharing the same non-empty comment. */
+   665→   665→function MyLotsGrouped({
+   666→   666→  lots,
+   667→   667→  t,
+   668→   668→  onDelete,
+   669→   669→}: {
+   670→   670→  lots: Lot[];
+   671→   671→  t: (k: string) => string;
+   672→   672→  onDelete: (id: string) => void | Promise<void>;
+   673→   673→}) {
+   674→   674→  // Group by comment (lots without a comment → individual group of size 1 each)
+   675→   675→  type Group = {
+   676→   676→    key: string;
+   677→   677→    comment: string | null;
+   678→   678→    lots: Lot[];
+   679→   679→  };
+   680→   680→
+   681→   681→  const groups: Group[] = (() => {
+   682→   682→    const map = new Map<string, Lot[]>();
+   683→   683→    const individual: Lot[] = [];
+   684→   684→
+   685→   685→    for (const lot of lots) {
+   686→   686→      const c = lot.comment && lot.comment.trim() ? lot.comment.trim() : null;
+   687→   687→      if (c) {
+   688→   688→        if (!map.has(c)) map.set(c, []);
+   689→   689→        map.get(c)!.push(lot);
+   690→   690→      } else {
+   691→   691→        individual.push(lot);
+   692→   692→      }
+   693→   693→    }
+   694→   694→
+   695→   695→    const out: Group[] = [];
+   696→   696→    map.forEach((lotsArr, comment) => {
+   697→   697→      out.push({ key: `kit:${comment}`, comment, lots: lotsArr });
+   698→   698→    });
+   699→   699→    for (const lot of individual) {
+   700→   700→      out.push({ key: `single:${lot.id}`, comment: null, lots: [lot] });
+   701→   701→    }
+   702→   702→    return out;
+   703→   703→  })();
+   704→   704→
+   705→   705→  return (
+   706→   706→    <motion.div
+   707→   707→      variants={containerVariants}
+   708→   708→      initial="hidden"
+   709→   709→      animate="visible"
+   710→   710→      className="space-y-6"
+   711→   711→    >
+   712→   712→      {groups.map((group) => {
+   713→   713→        const isKit = group.lots.length > 1;
+   714→   714→        return (
+   715→   715→          <motion.div key={group.key} variants={itemVariants} className="space-y-3">
+   716→   716→            {/* Kit header */}
+   717→   717→            {isKit && (
+   718→   718→              <div className="flex items-center gap-2.5 px-2">
+   719→   719→                <div className="w-7 h-7 rounded-lg bg-accent text-accent-foreground flex items-center justify-center flex-shrink-0">
+   720→   720→                  <Boxes className="w-4 h-4" />
+   721→   721→                </div>
+   722→   722→                <div className="min-w-0">
+   723→   723→                  <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+   724→   724→                    {t("lots.kit")}
+   725→   725→                  </div>
+   726→   726→                  <div className="text-sm font-semibold text-foreground truncate">
+   727→   727→                    💬 {group.comment}
+   728→   728→                  </div>
+   729→   729→                </div>
+   730→   730→                <span className="ml-auto text-xs text-muted-foreground aa-mono">
+   731→   731→                  {group.lots.length} {t("lots.kitLots")}
+   732→   732→                </span>
+   733→   733→              </div>
+   734→   734→            )}
+   735→   735→
+   736→   736→            {/* Lots grid */}
+   737→   737→            <div className={`grid grid-cols-1 ${group.lots.length > 1 ? "md:grid-cols-2" : ""} gap-4`}>
+   738→   738→              {group.lots.map((lot) => (
+   739→   739→                <motion.div
+   740→   740→                  key={lot.id}
+   741→   741→                  layout
+   742→   742→                  initial={{ opacity: 0, y: 8 }}
+   743→   743→                  animate={{ opacity: 1, y: 0 }}
+   744→   744→                  className="aa-card aa-card-hover p-5"
+   745→   745→                >
+   746→   746→                  <div className="flex items-start justify-between gap-3 mb-3">
+   747→   747→                    <div>
+   748→   748→                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+   749→   749→                        {t("lots.lotNumber")}
+   750→   750→                      </div>
+   751→   751→                      <div className="text-2xl font-extrabold aa-mono text-primary mt-0.5">
+   752→   752→                        #{lot.lotNumber}
+   753→   753→                      </div>
+   754→   754→                    </div>
+   755→   755→                    <StatusBadge status={lot.status} label={t(`status.${lot.status}`)} />
+   756→   756→                  </div>
+   757→   757→                  {lot.rawText && (
+   758→   758→                    <p className="text-sm text-foreground mb-2 break-words">
+   759→   759→                      {lot.rawText}
+   760→   760→                    </p>
+   761→   761→                  )}
+   762→   762→                  {/* For single lots (no kit) show comment inline */}
+   763→   763→                  {!isKit && lot.comment && (
+   764→   764→                    <p className="text-xs text-muted-foreground italic bg-muted/40 rounded-lg px-2.5 py-1.5">
+   765→   765→                      💬 {lot.comment}
+   766→   766→                    </p>
+   767→   767→                  )}
+   768→   768→                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/60">
+   769→   769→                    <span className="text-xs text-muted-foreground">
+   770→   770→                      {new Date(lot.createdAt).toLocaleDateString()}
+   771→   771→                    </span>
+   772→   772→                    <button
+   773→   773→                      onClick={() => onDelete(lot.id)}
+   774→   774→                      className="text-xs text-destructive hover:underline flex items-center gap-1 transition"
+   775→   775→                    >
+   776→   776→                      <Trash2 className="w-3 h-3" /> {t("common.delete")}
+   777→   777→                    </button>
+   778→   778→                  </div>
+   779→   779→                </motion.div>
+   780→   780→              ))}
+   781→   781→            </div>
+   782→   782→          </motion.div>
+   783→   783→        );
+   784→   784→      })}
+   785→   785→    </motion.div>
+   786→   786→  );
+   787→   787→}
+   788→   788→
+   789→   789→function InfoRow({
+   790→   790→  icon,
+   791→   791→  label,
+   792→   792→  value,
+   793→   793→  mono,
+   794→   794→}: {
+   795→   795→  icon: React.ReactNode;
+   796→   796→  label: string;
+   797→   797→  value: string;
+   798→   798→  mono?: boolean;
+   799→   799→}) {
+   800→   800→  return (
+   801→   801→    <div className="flex items-start gap-2.5">
+   802→   802→      <div className="w-6 h-6 rounded-md bg-muted/60 flex items-center justify-center flex-shrink-0 mt-0.5 text-muted-foreground">
+   803→   803→        {icon}
+   804→   804→      </div>
+   805→   805→      <div className="min-w-0 flex-1">
+   806→   806→        <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+   807→   807→          {label}
+   808→   808→        </div>
+   809→   809→        <div className={`text-sm text-foreground break-words ${mono ? "aa-mono font-semibold" : "font-medium"}`}>
+   810→   810→          {value}
+   811→   811→        </div>
+   812→   812→      </div>
+   813→   813→    </div>
+   814→   814→  );
+   815→   815→}
+   816→   816→
