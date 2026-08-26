@@ -44,6 +44,7 @@ type Lot = {
   createdAt: string;
   client: { id: string; name: string | null; username: string };
   emailBatch: { id: string; subject: string; sentAt: string } | null;
+  wonLot: { id: string; price: number | null; status: string; bodyNumber: string | null } | null;
 };
 
 type WonLot = {
@@ -218,9 +219,8 @@ export function AdminPanel() {
   });
 
   const tabs: Tab[] = [
-    { key: "allLots", label: t("nav.allLots"), icon: <Stack className="w-4 h-4" /> },
-    { key: "wonLots", label: t("nav.wonLots"), icon: <Trophy className="w-4 h-4" /> },
-    { key: "delivery", label: t("nav.delivery"), icon: <Truck className="w-4 h-4" /> },
+    { key: "allLots", label: t("nav.requests"), icon: <Stack className="w-4 h-4" /> },
+    { key: "delivery", label: t("nav.adminData"), icon: <Truck className="w-4 h-4" /> },
     { key: "clients", label: t("nav.clients"), icon: <Users className="w-4 h-4" /> },
     { key: "emailHistory", label: t("email.history"), icon: <Envelope className="w-4 h-4" /> },
   ];
@@ -359,15 +359,17 @@ export function AdminPanel() {
       fab={
         activeTab === "clients" && !drilledClientId ? { label: t("clients.add"), icon: <Plus className="w-5 h-5" />, onClick: () => setShowAddClient(true) }
         : activeTab === "allLots" ? { label: t("lots.formEmail"), icon: <PaperPlaneTilt className="w-5 h-5" />, onClick: sendEmail }
-        : activeTab === "wonLots" ? { label: t("wonLots.acceptBids"), icon: <Trophy className="w-5 h-5" />, onClick: () => setShowWonModal(true) }
         : undefined
       }
     >
       {activeTab === "allLots" && (
         <div>
           <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
-            <h1 className="aa-serif text-2xl font-semibold">{t("nav.allLots")}</h1>
+            <h1 className="aa-serif text-2xl font-semibold">{t("nav.requests")}</h1>
             <div className="flex items-center gap-2 flex-wrap">
+              <button onClick={() => setShowWonModal(true)} className="h-10 px-3 rounded-md border border-border hover:bg-muted text-sm font-semibold flex items-center gap-1.5 transition">
+                <Trophy className="w-4 h-4" /><span className="hidden sm:inline">{t("wonLots.acceptBids")}</span>
+              </button>
               <button onClick={deleteSelectedLots} disabled={selectedIds.size === 0} className="h-10 px-3 rounded-md border border-destructive/30 text-destructive hover:bg-destructive hover:text-background text-sm font-semibold flex items-center gap-1.5 disabled:opacity-40 transition">
                 <Trash className="w-4 h-4" /><span className="hidden sm:inline">{t("lots.deleteSelected")}</span>
                 {selectedIds.size > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full bg-destructive/10 text-xs">{selectedIds.size}</span>}
@@ -396,42 +398,6 @@ export function AdminPanel() {
         </div>
       )}
 
-      {activeTab === "wonLots" && (
-        <div>
-          <div className="flex items-center justify-between mb-5">
-            <h1 className="aa-serif text-2xl font-semibold">{t("nav.wonLots")}</h1>
-            <button onClick={() => setShowWonModal(true)} className="hidden md:flex h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-semibold items-center gap-1.5 hover:bg-primary/90 transition-colors">
-              <Trophy className="w-4 h-4" /> {t("wonLots.acceptBids")}
-            </button>
-          </div>
-          {wonLots.length === 0 ? (
-            <EmptyState icon={<Trophy className="w-10 h-10 text-muted-foreground" />} text={t("wonLots.noWonLots")} />
-          ) : (
-            <motion.div variants={containerVariants} initial="hidden" animate="visible" className="aa-card overflow-hidden">
-              <div className="overflow-x-auto scroll-slim">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 text-muted-foreground text-xs uppercase"><tr>
-                    <th className="text-left px-4 py-3">{t("lots.lotNumber")}</th>
-                    <th className="text-left px-4 py-3">{t("lots.client")}</th>
-                    <th className="text-left px-4 py-3 hidden sm:table-cell">{t("wonLots.bodyNumber")}</th>
-                    <th className="text-right px-4 py-3">{t("wonLots.price")}</th>
-                  </tr></thead>
-                  <tbody>
-                    {wonLots.map((wl) => (
-                      <motion.tr key={wl.id} variants={itemVariants} className="border-t border-border/60 hover:bg-muted/30 transition">
-                        <td className="px-4 py-3 aa-mono font-bold text-primary">#{wl.lot.lotNumber}</td>
-                        <td className="px-4 py-3 text-xs">{wl.lot.client.name || wl.lot.client.username}</td>
-                        <td className="px-4 py-3 text-muted-foreground max-w-xs truncate hidden sm:table-cell">{wl.bodyNumber || stripLotNumber(wl.lot.rawText) || "—"}</td>
-                        <td className="px-4 py-3 text-right aa-mono font-semibold">{wl.price != null ? wl.price.toLocaleString() : "—"} <span className="text-xs text-muted-foreground">{t("wonLots.currency")}</span></td>
-                      </motion.tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </motion.div>
-          )}
-        </div>
-      )}
 
       {activeTab === "delivery" && <AdminDelivery wonLots={wonLots} setWonLots={setWonLots} authHeaders={authHeaders} t={t} />}
 
@@ -456,7 +422,7 @@ export function AdminPanel() {
                         <StatusBadge status={c.role === "ADMIN" ? "PROCESSING" : "PENDING"} label={c.role} pulse={false} />
                       </div>
                       <div className="text-xs text-muted-foreground mt-3 flex items-center gap-3"><span className="aa-mono font-semibold text-primary text-lg">{c._count.lots}</span> {t("clients.lotsCount").toLowerCase()}</div>
-                      <div className="mt-3 text-xs h-8 px-3 rounded-lg border border-border bg-muted/30 font-medium w-full flex items-center justify-center gap-1">{t("nav.allLots")} <CaretRight className="w-3 h-3" /></div>
+                      <div className="mt-3 text-xs h-8 px-3 rounded-lg border border-border bg-muted/30 font-medium w-full flex items-center justify-center gap-1">{t("nav.requests")} <CaretRight className="w-3 h-3" /></div>
                     </motion.button>
                   ))}
                 </motion.div>
@@ -517,7 +483,7 @@ export function AdminPanel() {
               {batches.map((b) => (
                 <motion.button key={b.id} variants={itemVariants} onClick={() => setViewBatch(b)} className="w-full aa-card aa-card-hover p-4 flex items-center justify-between text-left">
                   <div className="min-w-0"><div className="font-semibold text-sm">{b.subject}</div><div className="text-xs text-muted-foreground mt-0.5">→ {b.recipientEmail} · {new Date(b.sentAt).toLocaleString()}</div></div>
-                  <div className="text-xs text-muted-foreground aa-mono">{b.lots?.length || 0} {t("nav.allLots").toLowerCase()}</div>
+                  <div className="text-xs text-muted-foreground aa-mono">{b.lots?.length || 0} {t("nav.requests").toLowerCase()}</div>
                 </motion.button>
               ))}
             </motion.div>
@@ -679,8 +645,11 @@ function AdminLotsGrouped({ lots, t, selectedIds, onToggleSelect, onToggleSelect
     const out: Group[] = [];
     map.forEach((arr) => { out.push({ key: `kit:${arr[0]?.id}`, comment: arr[0]?.comment || null, clientName: arr[0]?.client.name || arr[0]?.client.username || "—", lots: arr }); });
     for (const lot of individual) out.push({ key: `single:${lot.id}`, comment: null, clientName: lot.client.name || lot.client.username, lots: [lot] });
-    // Sort by each group's most recent lot — kits and individual lots interleave by true recency
+    // Won groups float to the top ("поднимать в списке заявок"), recency decides within each bucket
     out.sort((a, b) => {
+      const aWon = a.lots.some((l) => !!l.wonLot) ? 1 : 0;
+      const bWon = b.lots.some((l) => !!l.wonLot) ? 1 : 0;
+      if (aWon !== bWon) return bWon - aWon;
       const aMax = Math.max(...a.lots.map((l) => new Date(l.createdAt).getTime()));
       const bMax = Math.max(...b.lots.map((l) => new Date(l.createdAt).getTime()));
       return bMax - aMax;
@@ -721,7 +690,15 @@ function AdminLotsGrouped({ lots, t, selectedIds, onToggleSelect, onToggleSelect
                     <div className="min-w-0 flex-1">
                       {lot.rawText && <p className="text-sm text-foreground break-words">{stripLotNumber(lot.rawText)}</p>}
                       {!isKit && lot.comment && <p className="text-xs text-muted-foreground italic mt-1">💬 {lot.comment}</p>}
-                      <div className="flex items-center gap-3 mt-2"><StatusBadge status={lot.status} label={t(`status.${lot.status}`)} /><span className="text-xs text-muted-foreground">{new Date(lot.createdAt).toLocaleDateString()}</span></div>
+                      <div className="flex items-center gap-3 mt-2 flex-wrap">
+                        <StatusBadge status={lot.wonLot ? lot.wonLot.status : lot.status} label={lot.wonLot ? t(`wonStatus.${lot.wonLot.status}`) : t(`status.${lot.status}`)} />
+                        {lot.wonLot && (
+                          <span className="text-xs font-bold aa-mono text-primary">
+                            {lot.wonLot.price != null ? lot.wonLot.price.toLocaleString() : "—"} {t("wonLots.currency")}
+                          </span>
+                        )}
+                        <span className="text-xs text-muted-foreground">{new Date(lot.createdAt).toLocaleDateString()}</span>
+                      </div>
                     </div>
                   </div>
                   <button onClick={() => onDelete(lot.id)} className="text-xs text-destructive hover:underline flex items-center gap-1 transition flex-shrink-0 mt-1"><Trash className="w-3 h-3" /></button>
@@ -738,16 +715,42 @@ function AdminLotsGrouped({ lots, t, selectedIds, onToggleSelect, onToggleSelect
 function AdminDelivery({ wonLots, setWonLots, authHeaders, t }: { wonLots: WonLot[]; setWonLots: React.Dispatch<React.SetStateAction<WonLot[]>>; authHeaders: HeadersInit; t: (k: string) => string }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const withDelivery = wonLots.filter((w) => w.deliveryReqs.length > 0);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState("");
+  const [savingBodyNumber, setSavingBodyNumber] = useState(false);
   const filtered = useMemo(() => {
     const terms = parseSearchTerms(searchQuery);
-    if (terms.length === 0) return withDelivery;
-    return withDelivery.filter((wl) => {
+    if (terms.length === 0) return wonLots;
+    return wonLots.filter((wl) => {
       const bodyNum = (wl.bodyNumber || stripLotNumber(wl.lot.rawText) || "").toLowerCase();
       const lotNum = wl.lot.lotNumber.toLowerCase();
       return terms.some((term) => { const t = term.toLowerCase(); return bodyNum.includes(t) || lotNum.includes(t); });
     });
-  }, [withDelivery, searchQuery]);
+  }, [wonLots, searchQuery]);
+
+  const startEdit = (wl: WonLot) => {
+    setEditingId(wl.id);
+    setEditDraft(wl.bodyNumber || "");
+  };
+
+  const saveBodyNumber = async (wonLotId: string) => {
+    setSavingBodyNumber(true);
+    const snapshot = wonLots;
+    const value = editDraft.trim() || null;
+    setWonLots((prev) => prev.map((w) => (w.id === wonLotId ? { ...w, bodyNumber: value } : w)));
+    const res = await fetch("/api/delivery", {
+      method: "PATCH",
+      headers: authHeaders,
+      body: JSON.stringify({ wonLotId, bodyNumber: value }),
+    });
+    setSavingBodyNumber(false);
+    if (res.ok) {
+      setEditingId(null);
+    } else {
+      setWonLots(snapshot);
+      toast.error(t("common.error"));
+    }
+  };
 
   const advanceStatus = async (wonLotId: string, nextStatus: string) => {
     const snapshot = wonLots;
@@ -767,22 +770,24 @@ function AdminDelivery({ wonLots, setWonLots, authHeaders, t }: { wonLots: WonLo
 
   return (
     <div>
-      <div className="mb-5"><h1 className="aa-serif text-2xl font-semibold">{t("nav.delivery")}</h1></div>
+      <div className="mb-5"><h1 className="aa-serif text-2xl font-semibold">{t("nav.adminData")}</h1></div>
       <div className="mb-4">
         <div className="relative">
           <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
           <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder={t("delivery.searchPlaceholder")} className="w-full h-12 pl-10 pr-4 rounded-md border border-input bg-background text-sm font-medium focus:outline-none focus:ring-1 focus:ring-foreground/30 focus:border-foreground/30 transition-colors" />
         </div>
-        {searchQuery && <p className="text-xs text-muted-foreground mt-2">{t("delivery.found")}: <span className="aa-mono font-bold text-primary">{filtered.length}</span> / {withDelivery.length}</p>}
+        {searchQuery && <p className="text-xs text-muted-foreground mt-2">{t("delivery.found")}: <span className="aa-mono font-bold text-primary">{filtered.length}</span> / {wonLots.length}</p>}
       </div>
-      {withDelivery.length === 0 ? (
-        <EmptyState icon={<Truck className="w-10 h-10 text-muted-foreground" />} text={t("delivery.noRequests")} />
+      {wonLots.length === 0 ? (
+        <EmptyState icon={<Truck className="w-10 h-10 text-muted-foreground" />} text={t("wonLots.noWonLots")} />
       ) : filtered.length === 0 ? (
         <EmptyState icon={<MagnifyingGlass className="w-10 h-10 text-muted-foreground" />} text={t("delivery.noSearchResults")} />
       ) : (
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-4">
           {filtered.map((wl) => {
             const req = wl.deliveryReqs[0]; const isDuty = req?.method === "DUTY";
+            const awaitingMethod = wl.deliveryReqs.length === 0;
+            const isEditing = editingId === wl.id;
             return (
               <motion.div key={wl.id} variants={itemVariants} className="aa-card aa-card-hover overflow-hidden">
                 <div className="flex items-start justify-between p-5 pb-4 gap-3">
@@ -791,7 +796,11 @@ function AdminDelivery({ wonLots, setWonLots, authHeaders, t }: { wonLots: WonLo
                     <div className="min-w-0"><div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{t("delivery.lotNumber")}</div><div className="text-xl font-extrabold aa-mono text-primary mt-0.5 truncate">#{wl.lot.lotNumber}</div></div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <StatusBadge status={wl.status} label={t(`wonStatus.${wl.status}`)} pulse={wl.status === "DELIVERY_REQUESTED"} />
+                    {awaitingMethod ? (
+                      <StatusBadge status="AWAITING" label={t("wonStatus.awaitingMethod")} pulse />
+                    ) : (
+                      <StatusBadge status={wl.status} label={t(`wonStatus.${wl.status}`)} pulse={wl.status === "DELIVERY_REQUESTED"} />
+                    )}
                     {wl.status === "DELIVERY_REQUESTED" && (
                       <button
                         onClick={() => advanceStatus(wl.id, "DELIVERY_CONFIRMED")}
@@ -818,7 +827,37 @@ function AdminDelivery({ wonLots, setWonLots, authHeaders, t }: { wonLots: WonLo
                   <div className="space-y-2.5">
                     <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1 flex items-center gap-1.5"><FileText className="w-3 h-3" />{t("delivery.lotInfo")}</div>
                     <InfoRow icon={<Hash className="w-3.5 h-3.5" />} label={t("delivery.lotNumber")} value={`#${wl.lot.lotNumber}`} mono />
-                    <InfoRow icon={<FileText className="w-3.5 h-3.5" />} label={t("wonLots.bodyNumber")} value={wl.bodyNumber || stripLotNumber(wl.lot.rawText) || "—"} />
+                    {isEditing ? (
+                      <div className="flex items-start gap-2.5">
+                        <div className="w-6 h-6 rounded-md bg-muted/60 flex items-center justify-center flex-shrink-0 mt-0.5 text-muted-foreground"><FileText className="w-3.5 h-3.5" /></div>
+                        <div className="min-w-0 flex-1 space-y-1.5">
+                          <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{t("wonLots.bodyNumber")}</div>
+                          <textarea
+                            value={editDraft}
+                            onChange={(e) => setEditDraft(e.target.value)}
+                            placeholder={t("wonLots.bodyNumberPlaceholder")}
+                            rows={2}
+                            autoFocus
+                            className="w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/30 focus:border-foreground/30 transition-colors resize-none"
+                          />
+                          <div className="flex items-center gap-2">
+                            <button onClick={() => saveBodyNumber(wl.id)} disabled={savingBodyNumber} className="h-7 px-2.5 rounded-md bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center gap-1">
+                              {savingBodyNumber && <CircleNotch className="w-3 h-3 animate-spin" weight="bold" />}{t("common.save")}
+                            </button>
+                            <button onClick={() => setEditingId(null)} className="h-7 px-2.5 rounded-md border border-border hover:bg-muted text-xs font-medium transition">{t("common.cancel")}</button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-start gap-2.5 group">
+                        <div className="w-6 h-6 rounded-md bg-muted/60 flex items-center justify-center flex-shrink-0 mt-0.5 text-muted-foreground"><FileText className="w-3.5 h-3.5" /></div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{t("wonLots.bodyNumber")}</div>
+                          <div className="text-sm text-foreground break-words font-medium">{wl.bodyNumber || stripLotNumber(wl.lot.rawText) || "—"}</div>
+                        </div>
+                        <button onClick={() => startEdit(wl)} className="text-xs text-muted-foreground hover:text-foreground underline flex-shrink-0 transition">{t("wonLots.bodyNumberEdit")}</button>
+                      </div>
+                    )}
                     <InfoRow icon={<Coins className="w-3.5 h-3.5" />} label={t("delivery.price")} value={wl.price != null ? `${wl.price.toLocaleString()} ${t("wonLots.currency")}` : "—"} mono />
                     <InfoRow icon={<Truck className="w-3.5 h-3.5" />} label={t("delivery.method")} value={req?.method ? t(`delivery.${req.method}`) : "—"} />
                     <InfoRow icon={<Calendar className="w-3.5 h-3.5" />} label={t("delivery.createdAt")} value={req ? new Date(req.createdAt).toLocaleString() : "—"} />

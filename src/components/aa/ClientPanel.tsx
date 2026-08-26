@@ -153,9 +153,8 @@ export function ClientPanel() {
   });
 
   const tabs: Tab[] = [
-    { key: "myLots", label: t("nav.myLots"), icon: <ListChecks className="w-4 h-4" /> },
-    { key: "wonLots", label: t("nav.wonLots"), icon: <Trophy className="w-4 h-4" /> },
-    { key: "delivery", label: t("nav.delivery"), icon: <Truck className="w-4 h-4" /> },
+    { key: "myLots", label: t("nav.requests"), icon: <ListChecks className="w-4 h-4" /> },
+    { key: "delivery", label: t("nav.wonSection"), icon: <Truck className="w-4 h-4" /> },
   ];
 
   // --- Multiple-lots form helpers ---
@@ -280,7 +279,6 @@ export function ClientPanel() {
     );
   }
 
-  const wonWithDelivery = wonLots.filter((w) => w.deliveryReqs.length > 0);
 
   return (
     <AppShell
@@ -296,7 +294,7 @@ export function ClientPanel() {
       {activeTab === "myLots" && (
         <div>
           <div className="hidden md:flex items-center justify-between mb-6">
-            <h1 className="aa-serif text-2xl font-semibold">{t("nav.myLots")}</h1>
+            <h1 className="aa-serif text-2xl font-semibold">{t("nav.requests")}</h1>
             <button
               onClick={() => setShowAdd(true)}
               className="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-1.5 hover:bg-primary/90 transition-colors"
@@ -304,7 +302,7 @@ export function ClientPanel() {
               <Plus className="w-4 h-4" /> {t("lots.add")}
             </button>
           </div>
-          <h1 className="aa-serif md:hidden text-xl font-semibold mb-4">{t("nav.myLots")}</h1>
+          <h1 className="aa-serif md:hidden text-xl font-semibold mb-4">{t("nav.requests")}</h1>
 
           {lots.length === 0 ? (
             <EmptyState icon={<Package className="w-10 h-10 text-muted-foreground" />} text={t("lots.noLots")} />
@@ -318,9 +316,9 @@ export function ClientPanel() {
         </div>
       )}
 
-      {activeTab === "wonLots" && (
+      {activeTab === "delivery" && (
         <div>
-          <h1 className="aa-serif text-2xl font-semibold mb-6">{t("nav.wonLots")}</h1>
+          <h1 className="aa-serif text-2xl font-semibold mb-6">{t("nav.wonSection")}</h1>
           {wonLots.length === 0 ? (
             <EmptyState icon={<Trophy className="w-10 h-10 text-muted-foreground" />} text={t("wonLots.noWonLots")} />
           ) : (
@@ -328,81 +326,12 @@ export function ClientPanel() {
               variants={containerVariants}
               initial="hidden"
               animate="visible"
-              className="aa-card overflow-hidden"
-            >
-              <div className="overflow-x-auto scroll-slim">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 text-muted-foreground text-xs uppercase">
-                    <tr>
-                      <th className="text-left px-4 py-3">{t("lots.lotNumber")}</th>
-                      <th className="text-left px-4 py-3 hidden sm:table-cell">{t("lots.rawText")}</th>
-                      <th className="text-right px-4 py-3">{t("wonLots.price")}</th>
-                      <th className="text-left px-4 py-3">{t("common.actions")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {wonLots.map((wl) => {
-                      const hasDelivery = wl.deliveryReqs.length > 0;
-                      return (
-                        <motion.tr
-                          key={wl.id}
-                          variants={itemVariants}
-                          className="border-t border-border/60 hover:bg-muted/30 transition"
-                        >
-                          <td className="px-4 py-3 aa-mono font-bold text-primary">
-                            #{wl.lot.lotNumber}
-                          </td>
-                          <td className="px-4 py-3 text-muted-foreground max-w-xs truncate hidden sm:table-cell">
-                            {wl.lot.rawText || "—"}
-                          </td>
-                          <td className="px-4 py-3 text-right aa-mono font-semibold">
-                            {wl.price != null ? wl.price.toLocaleString() : "—"}{" "}
-                            <span className="text-xs text-muted-foreground">{t("wonLots.currency")}</span>
-                          </td>
-                          <td className="px-4 py-3">
-                            {hasDelivery ? (
-                              <StatusBadge status={wl.status} label={t(`wonStatus.${wl.status}`)} pulse={wl.status === "DELIVERY_REQUESTED"} />
-                            ) : (
-                              <button
-                                onClick={() => {
-                                  setDeliveryWonLot(wl);
-                                  setDeliveryMethod("DUTY");
-                                  setOwnerFullName("");
-                                  setOwnerAddress("");
-                                  setDeliveryErrors({});
-                                }}
-                                className="text-xs h-8 px-3 rounded-lg border border-border hover:bg-muted hover:border-primary/40 font-medium flex items-center gap-1 transition"
-                              >
-                                <Truck className="w-3 h-3" /> {t("delivery.chooseMethod")}
-                              </button>
-                            )}
-                          </td>
-                        </motion.tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </motion.div>
-          )}
-        </div>
-      )}
-
-      {activeTab === "delivery" && (
-        <div>
-          <h1 className="aa-serif text-2xl font-semibold mb-6">{t("nav.delivery")}</h1>
-          {wonWithDelivery.length === 0 ? (
-            <EmptyState icon={<Truck className="w-10 h-10 text-muted-foreground" />} text={t("delivery.noRequests")} />
-          ) : (
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
               className="space-y-4"
             >
-              {wonWithDelivery.map((wl) => {
+              {wonLots.map((wl) => {
                 const req = wl.deliveryReqs[0];
                 const isDuty = req?.method === "DUTY";
+                const awaitingMethod = wl.deliveryReqs.length === 0;
                 return (
                   <motion.div
                     key={wl.id}
@@ -424,7 +353,11 @@ export function ClientPanel() {
                           </div>
                         </div>
                       </div>
-                      <StatusBadge status={wl.status} label={t(`wonStatus.${wl.status}`)} pulse={wl.status === "DELIVERY_REQUESTED"} />
+                      {awaitingMethod ? (
+                        <StatusBadge status="AWAITING" label={t("wonStatus.awaitingMethod")} pulse />
+                      ) : (
+                        <StatusBadge status={wl.status} label={t(`wonStatus.${wl.status}`)} pulse={wl.status === "DELIVERY_REQUESTED"} />
+                      )}
                     </div>
 
                     {/* Body */}
@@ -437,8 +370,12 @@ export function ClientPanel() {
                         </div>
                         <InfoRow icon={<Hash className="w-3.5 h-3.5" />} label={t("delivery.lotNumber")} value={`#${wl.lot.lotNumber}`} mono />
                         <InfoRow icon={<Coins className="w-3.5 h-3.5" />} label={t("delivery.price")} value={wl.price != null ? `${wl.price.toLocaleString()} ${t("wonLots.currency")}` : "—"} mono />
-                        <InfoRow icon={<Truck className="w-3.5 h-3.5" />} label={t("delivery.method")} value={req?.method ? t(`delivery.${req.method}`) : "—"} />
-                        <InfoRow icon={<Calendar className="w-3.5 h-3.5" />} label={t("delivery.createdAt")} value={req ? new Date(req.createdAt).toLocaleString() : "—"} />
+                        {!awaitingMethod && (
+                          <InfoRow icon={<Truck className="w-3.5 h-3.5" />} label={t("delivery.method")} value={req?.method ? t(`delivery.${req.method}`) : "—"} />
+                        )}
+                        {!awaitingMethod && (
+                          <InfoRow icon={<Calendar className="w-3.5 h-3.5" />} label={t("delivery.createdAt")} value={req ? new Date(req.createdAt).toLocaleString() : "—"} />
+                        )}
                         {wl.lot.rawText && (
                           <div className="pt-2 mt-1 border-t border-border/60">
                             <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">
@@ -448,6 +385,20 @@ export function ClientPanel() {
                               {wl.lot.rawText}
                             </p>
                           </div>
+                        )}
+                        {awaitingMethod && (
+                          <button
+                            onClick={() => {
+                              setDeliveryWonLot(wl);
+                              setDeliveryMethod("DUTY");
+                              setOwnerFullName("");
+                              setOwnerAddress("");
+                              setDeliveryErrors({});
+                            }}
+                            className="w-full h-10 mt-1 rounded-md bg-primary text-primary-foreground text-sm font-semibold flex items-center justify-center gap-1.5 hover:bg-primary/90 transition-colors"
+                          >
+                            <Truck className="w-4 h-4" /> {t("delivery.chooseMethod")}
+                          </button>
                         )}
                       </div>
 

@@ -18,11 +18,10 @@ const translations: Record<Language, Record<string, string>> = {
     "auth.invalidCredentials": "Неверный логин или пароль",
 
     // navigation (5)
-    "nav.myLots": "Мои лоты",
-    "nav.wonLots": "Выигранные",
-    "nav.delivery": "Доставка",
+    "nav.requests": "Заявки",
+    "nav.wonSection": "Мои лоты",
+    "nav.adminData": "Данные",
     "nav.clients": "Клиенты",
-    "nav.allLots": "Все лоты",
 
     // lots (12)
     "lots.title": "Лоты",
@@ -178,6 +177,7 @@ const translations: Record<Language, Record<string, string>> = {
 
     // WonLot statuses
     "wonStatus.WON": "Выигран",
+    "wonStatus.awaitingMethod": "Ожидает выбора ввоза",
     "wonStatus.DELIVERY_REQUESTED": "Запрос доставки",
     "wonStatus.DELIVERY_CONFIRMED": "Доставка подтверждена",
     "wonStatus.COMPLETED": "Завершён",
@@ -191,7 +191,9 @@ const translations: Record<Language, Record<string, string>> = {
     "wonLots.empty": "Введите результаты торгов для предпросмотра",
     "wonLots.confirmSave": "Подтвердить и сохранить",
     "wonLots.nothingToSave": "Нет ни одного совпавшего лота — нечего сохранять",
-    "wonLots.bodyNumber": "Номер кузова",
+    "wonLots.bodyNumber": "Общая информация",
+    "wonLots.bodyNumberEdit": "Редактировать",
+    "wonLots.bodyNumberPlaceholder": "Общая информация по лоту...",
   },
   en: {
     // auth (6)
@@ -203,11 +205,10 @@ const translations: Record<Language, Record<string, string>> = {
     "auth.invalidCredentials": "Invalid username or password",
 
     // navigation (5)
-    "nav.myLots": "My lots",
-    "nav.wonLots": "Won lots",
-    "nav.delivery": "Delivery",
+    "nav.requests": "Requests",
+    "nav.wonSection": "My lots",
+    "nav.adminData": "Data",
     "nav.clients": "Clients",
-    "nav.allLots": "All lots",
 
     // lots (12)
     "lots.title": "Lots",
@@ -362,6 +363,7 @@ const translations: Record<Language, Record<string, string>> = {
 
     // WonLot statuses
     "wonStatus.WON": "Won",
+    "wonStatus.awaitingMethod": "Awaiting import method",
     "wonStatus.DELIVERY_REQUESTED": "Delivery requested",
     "wonStatus.DELIVERY_CONFIRMED": "Delivery confirmed",
     "wonStatus.COMPLETED": "Completed",
@@ -375,7 +377,9 @@ const translations: Record<Language, Record<string, string>> = {
     "wonLots.empty": "Paste auction results to see preview",
     "wonLots.confirmSave": "Confirm and save",
     "wonLots.nothingToSave": "No matched lots — nothing to save",
-    "wonLots.bodyNumber": "Body number",
+    "wonLots.bodyNumber": "General information",
+    "wonLots.bodyNumberEdit": "Edit",
+    "wonLots.bodyNumberPlaceholder": "General information about the lot...",
   },
 };
 

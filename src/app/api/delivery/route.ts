@@ -39,20 +39,39 @@ export async function PATCH(req: Request) {
   try {
     const body = await req.json()
     const wonLotId = String(body.wonLotId || '')
-    const status = String(body.status || '')
-    const allowed = ['DELIVERY_REQUESTED', 'DELIVERY_CONFIRMED', 'COMPLETED']
-    if (!wonLotId || !allowed.includes(status)) {
-      return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
+    if (!wonLotId) {
+      return NextResponse.json({ error: 'wonLotId is required' }, { status: 400 })
+    }
+
+    const data: { status?: string; bodyNumber?: string | null } = {}
+
+    if (body.status !== undefined) {
+      const allowed = ['DELIVERY_REQUESTED', 'DELIVERY_CONFIRMED', 'COMPLETED']
+      const status = String(body.status)
+      if (!allowed.includes(status)) {
+        return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
+      }
+      data.status = status
+    }
+
+    if (body.bodyNumber !== undefined) {
+      data.bodyNumber = body.bodyNumber ? String(body.bodyNumber) : null
+    }
+
+    if (Object.keys(data).length === 0) {
+      return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
     }
 
     const wonLot = await db.wonLot.update({
       where: { id: wonLotId },
-      data: { status },
+      data,
     })
 
     return NextResponse.json({ wonLot })
   } catch (e) {
-    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+    console.error('[delivery] PATCH FATAL:', e)
+    const message = e instanceof Error ? e.message : String(e)
+    return NextResponse.json({ error: 'Server error', detail: message }, { status: 500 })
   }
 }
 
