@@ -1,0 +1,225 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-playfair), Georgia, serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  /* AutoAuction design tokens */
+  --color-aa: var(--aa);
+  --color-aa-soft: var(--aa-soft);
+  --color-aa-ink: var(--aa-ink);
+  /* Utilitarian minimalism: crisp 8-12px radius scale, no pills on large elements */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 12px;
+}
+
+:root {
+  /* Warm monochrome canvas + muted pastel accent (Pale Blue) */
+  --background: #FBFBFA;
+  --foreground: #111111;
+  --card: #FFFFFF;
+  --card-foreground: #111111;
+  --popover: #FFFFFF;
+  --popover-foreground: #111111;
+  --primary: #111111;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F7F6F3;
+  --secondary-foreground: #2F3437;
+  --muted: #F7F6F3;
+  --muted-foreground: #787774;
+  --accent: #E1F3FE;
+  --accent-foreground: #1F6C9F;
+  --destructive: #9F2F2D;
+  --border: #EAEAEA;
+  --input: #EAEAEA;
+  --ring: #111111;
+  --aa: #1F6C9F;
+  --aa-soft: #E1F3FE;
+  --aa-ink: #2F3437;
+  --chart-1: #1F6C9F;
+  --chart-2: #346538;
+  --chart-3: #956400;
+  --chart-4: #9F2F2D;
+  --chart-5: #787774;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #111111;
+  --sidebar-primary: #111111;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #E1F3FE;
+  --sidebar-accent-foreground: #1F6C9F;
+  --sidebar-border: #EAEAEA;
+  --sidebar-ring: #111111;
+}
+
+.dark {
+  --background: #17181A;
+  --foreground: #EDECE9;
+  --card: #1F2023;
+  --card-foreground: #EDECE9;
+  --popover: #1F2023;
+  --popover-foreground: #EDECE9;
+  --primary: #EDECE9;
+  --primary-foreground: #17181A;
+  --secondary: #232427;
+  --secondary-foreground: #EDECE9;
+  --muted: #232427;
+  --muted-foreground: #9A988F;
+  --accent: #1B2C36;
+  --accent-foreground: #7FC1EE;
+  --destructive: #E5827F;
+  --border: #2C2D30;
+  --input: #2C2D30;
+  --ring: #EDECE9;
+  --aa: #7FC1EE;
+  --aa-soft: #1B2C36;
+  --aa-ink: #D8ECFB;
+  --sidebar: #1F2023;
+  --sidebar-foreground: #EDECE9;
+  --sidebar-primary: #EDECE9;
+  --sidebar-primary-foreground: #17181A;
+  --sidebar-accent: #1B2C36;
+  --sidebar-accent-foreground: #7FC1EE;
+  --sidebar-border: #2C2D30;
+  --sidebar-ring: #EDECE9;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html,
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "cv11", "ss01";
+  }
+  /* Hide scrollbars but keep scrolling */
+  .scroll-slim::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scroll-slim::-webkit-scrollbar-thumb {
+    background: rgba(17, 17, 17, 0.14);
+    border-radius: 9999px;
+  }
+  .scroll-slim::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+/* AutoAuction utility classes — flat, bordered, no gradients, no glow */
+.aa-card {
+  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+
+.aa-card-hover:hover {
+  box-shadow: 0 2px 8px rgba(17, 17, 17, 0.04);
+  border-color: rgba(17, 17, 17, 0.12);
+}
+
+.aa-soft {
+  background: var(--card);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.aa-mark {
+  background: var(--foreground);
+}
+
+.aa-mono {
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum";
+}
+
+.aa-serif {
+  font-family: var(--font-serif);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+/* Pulsing status for PENDING / WAITING-like statuses — restrained, monochrome-safe */
+@keyframes aa-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(149, 100, 0, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(149, 100, 0, 0);
+  }
+}
+
+.aa-pulse {
+  animation: aa-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes aa-pulse-won {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(52, 101, 56, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(52, 101, 56, 0);
+  }
+}
+
+.aa-pulse-won {
+  animation: aa-pulse-won 2.2s ease-in-out infinite;
+}
+
+/* Mobile bottom-sheet modal */
+.aa-sheet {
+  border-radius: 12px 12px 0 0;
+}
+
+/* Reduce motion for users that prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .aa-pulse,
+  .aa-pulse-won {
+    animation: none;
+  }
+}
+
+/* iOS Safari auto-zooms on input focus when font-size < 16px. */
+@media (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
