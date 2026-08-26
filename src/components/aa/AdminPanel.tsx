@@ -101,8 +101,8 @@ function parseWonText(text: string): { lotNumber: string; price: string; bodyNum
   for (const line of lines) {
     const nums = line.match(/\d{1,3}(?:[,.]\d{3})+|\d+/g) || [];
     if (nums.length === 0) continue;
-    const firstNum = nums[0];
-    const lastNum = nums[nums.length - 1];
+    const firstNum: string = nums[0]!;
+    const lastNum: string = nums[nums.length - 1]!;
     const lotNumber = firstNum.replace(/[,.]/g, "");
     const price = lastNum.replace(/[,.]/g, "");
     const firstIdx = line.indexOf(firstNum);
@@ -130,6 +130,8 @@ export function AdminPanel() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const [emailPreview, setEmailPreview] = useState<{ body: string; subject: string; recipientEmail: string } | null>(null);
+  const [emailLotIds, setEmailLotIds] = useState<string[] | null>(null);
+  const [emailSending, setEmailSending] = useState(false);
   const [wonInput, setWonInput] = useState("");
   const [showWonModal, setShowWonModal] = useState(false);
   const [wonSubmitting, setWonSubmitting] = useState(false);
@@ -233,12 +235,24 @@ export function AdminPanel() {
 
   const sendEmail = async () => {
     const ids = Array.from(selectedIds);
-    if (ids.length === 0) { toast.error("Select at least one lot"); return; }
-    const res = await fetch("/api/email", { method: "POST", headers: authHeaders, body: JSON.stringify({ lotIds: ids }) });
+    if (ids.length === 0) { toast.error(t("lots.selectAtLeastOne")); return; }
+    const res = await fetch("/api/email", { method: "POST", headers: authHeaders, body: JSON.stringify({ lotIds: ids, mode: "preview" }) });
     if (res.ok) {
       const data = await res.json();
       setEmailPreview(data.preview);
-      setSelectedIds(new Set());
+      setEmailLotIds(ids);
+    } else { const data = await res.json().catch(() => ({})); toast.error(data.error || t("common.error")); }
+  };
+
+  const commitSendEmail = async () => {
+    if (!emailLotIds || emailSending) return;
+    setEmailSending(true);
+    const res = await fetch("/api/email", { method: "POST", headers: authHeaders, body: JSON.stringify({ lotIds: emailLotIds, mode: "send" }) });
+    setEmailSending(false);
+    if (res.ok) {
+      const data = await res.json();
+      toast.success(data.smtpSent ? t("email.smtpSentOk") : t("email.markedSentNoSmtp"));
+      setEmailPreview(null); setEmailLotIds(null); setSelectedIds(new Set());
       await Promise.all([loadLots(), loadBatches()]);
     } else { const data = await res.json().catch(() => ({})); toast.error(data.error || t("common.error")); }
   };
@@ -512,12 +526,16 @@ export function AdminPanel() {
       )}
 
       {/* Email preview modal */}
-      <Modal open={!!emailPreview} onClose={() => setEmailPreview(null)} title={t("email.preview")} size="lg"
+      <Modal open={!!emailPreview} onClose={() => { setEmailPreview(null); setEmailLotIds(null); }} title={t("email.preview")} size="lg"
         footer={<>
           <button onClick={() => copyToClipboard(emailPreview?.body || "")} className="h-10 px-4 rounded-md border border-border hover:bg-muted text-sm font-medium flex items-center gap-1.5 transition"><Copy className="w-4 h-4" /> {t("email.copy")}</button>
-          <button onClick={() => setEmailPreview(null)} className="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors">{t("common.close")}</button>
+          <button onClick={commitSendEmail} disabled={emailSending} className="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center gap-1.5">
+            {emailSending && <CircleNotch className="w-4 h-4 animate-spin" weight="bold" />}
+            <PaperPlaneTilt className="w-4 h-4" weight={emailSending ? undefined : "bold"} /> {t("email.send")}
+          </button>
         </>}>
         {emailPreview && (<div className="space-y-3">
+          <p className="text-xs text-muted-foreground">{t("email.previewHint")}</p>
           <div className="text-sm"><span className="text-muted-foreground">{t("email.subject")}: </span><span className="font-semibold">{emailPreview.subject}</span></div>
           <div className="text-sm"><span className="text-muted-foreground">{t("email.recipient")}: </span><span className="font-semibold aa-mono">{emailPreview.recipientEmail}</span></div>
           <pre className="bg-muted/50 rounded-md p-4 text-xs font-mono whitespace-pre-wrap max-h-[50vh] overflow-y-auto scroll-slim">{emailPreview.body}</pre>
@@ -656,7 +674,7 @@ function AdminLotsGrouped({ lots, t, selectedIds, onToggleSelect, onToggleSelect
   const groups: Group[] = (() => {
     const map = new Map<string, Lot[]>(); const individual: Lot[] = [];
     for (const lot of lots) { const c = lot.comment?.trim() || null;
-      if (c) { const k = `${lot.clientId}::${c}`; if (!map.has(k)) map.set(k, []); map.get(k)!.push(lot); }
+      if (c) { const k = `${lot.client.id}::${c}`; if (!map.has(k)) map.set(k, []); map.get(k)!.push(lot); }
       else individual.push(lot); }
     const out: Group[] = [];
     map.forEach((arr) => { out.push({ key: `kit:${arr[0]?.id}`, comment: arr[0]?.comment || null, clientName: arr[0]?.client.name || arr[0]?.client.username || "—", lots: arr }); });

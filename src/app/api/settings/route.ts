@@ -4,6 +4,8 @@ import { getAuthUser } from '@/lib/session'
 
 const SETTING_KEYS = [
   'emailRecipient',
+  'emailSubjectTemplate',
+  'emailIntroTemplate',
   'smtpHost',
   'smtpPort',
   'smtpUser',
@@ -35,16 +37,16 @@ export async function GET(req: Request) {
       where: { key: { in: SETTING_KEYS as readonly string[] } },
     })
 
-    const result: Record<string, string | null> = {}
+    const result: Record<string, string | null> & { smtpPasswordConfigured?: boolean } = {}
     for (const key of SETTING_KEYS) {
       const s = settings.find((s) => s.key === key)
       result[key] = s?.value || null
     }
 
-    result.smtpPasswordConfigured = !!result.smtpPassword
+    const smtpPasswordConfigured = !!result.smtpPassword
     delete result.smtpPassword
 
-    return NextResponse.json({ settings: result })
+    return NextResponse.json({ settings: { ...result, smtpPasswordConfigured } })
   } catch (err) {
     console.error('[settings] FATAL:', err)
     const message = err instanceof Error ? err.message : String(err)
