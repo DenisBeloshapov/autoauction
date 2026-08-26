@@ -1,5 +1,12 @@
-// AutoAuction — schema v1.0 (PostgreSQL для продакшена на Vercel/Neon)
-// Скопируйте этот файл в prisma/schema.prisma перед миграцией на PostgreSQL.
+// AutoAuction — единая production-схема (PostgreSQL / Neon / Vercel).
+// Это ЕДИНСТВЕННЫЙ файл схемы в проекте — ранее существовал ещё и
+// дублирующий schema.prisma в корне репозитория, который Prisma CLI на
+// Vercel читал ВМЕСТО этого файла (см. build-логи: "Prisma schema loaded
+// from schema.prisma"), из-за чего фиксы в этот файл месяцами не долетали
+// до продакшена, хотя визуально всё выглядело правильно. Корневой файл
+// удалён. Не создавайте его заново — все команды prisma (см. package.json)
+// теперь ещё и явно указывают --schema=./prisma/schema.prisma на всякий
+// случай, но лучше просто не плодить второй файл схемы.
 
 generator client {
   provider = "prisma-client-js"
@@ -34,13 +41,13 @@ model Lot {
   carModel     String?
   auctionDate  String   @default("")
   comment      String?
-  status       String   @default("PENDING")
+  status       String   @default("PENDING") // PENDING | SENT | WON
   clientId     String
   emailBatchId String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  client     User         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  client     User        @relation(fields: [clientId], references: [id], onDelete: Cascade)
   emailBatch EmailBatch? @relation(fields: [emailBatchId], references: [id])
   wonLot     WonLot?
 
@@ -54,12 +61,12 @@ model WonLot {
   lotId      String   @unique
   price      Float?
   currency   String   @default("JPY")
+  status     String   @default("WON") // WON | DELIVERY_REQUESTED | DELIVERY_CONFIRMED | COMPLETED
   bodyNumber String?
-  status     String   @default("WON")
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  lot          Lot              @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  lot          Lot               @relation(fields: [lotId], references: [id], onDelete: Cascade)
   deliveryReqs DeliveryRequest[]
 }
 
@@ -67,7 +74,7 @@ model DeliveryRequest {
   id            String   @id @default(cuid())
   wonLotId      String
   clientId      String
-  method        String?
+  method        String? // DUTY | DISASSEMBLY | CUT_REAR | CUT_FRONT | CUT_REAR_ARCS
   ownerFullName String?
   ownerAddress  String?
   status        String   @default("PENDING")
