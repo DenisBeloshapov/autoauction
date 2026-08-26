@@ -271,7 +271,7 @@ export function AdminPanel() {
       toast.success(`${t("common.success")}: ${data.results.filter((r: { status: string }) => r.status !== "lot_not_found").length}/${data.processed}`);
       setWonInput(""); setShowWonModal(false);
       await Promise.all([loadLots(), loadWonLots()]);
-    } else { const data = await res.json().catch(() => ({})); toast.error(data.error || t("common.error")); }
+    } else { const data = await res.json().catch(() => ({})); toast.error(data.detail || data.error || t("common.error")); }
   };
 
   const submitNewClient = async () => {

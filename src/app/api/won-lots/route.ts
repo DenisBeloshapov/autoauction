@@ -146,6 +146,8 @@ export async function POST(req: Request) {
       results,
     })
   } catch (e) {
-    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+    console.error('[won-lots] FATAL:', e)
+    const message = e instanceof Error ? e.message : String(e)
+    return NextResponse.json({ error: 'Server error', detail: message }, { status: 500 })
   }
 }
