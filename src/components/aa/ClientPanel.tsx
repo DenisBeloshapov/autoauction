@@ -165,13 +165,31 @@ export function ClientPanel() {
     setLotEntries((prev) => prev.filter((_, i) => i !== idx));
   };
   const updateLotEntry = (idx: number, val: string) => {
+    if (val.includes("\n")) {
+      const lines = val.split("\n").map((l) => l.trim()).filter(Boolean);
+      if (lines.length > 1) {
+        // Bulk paste: each non-empty line is structurally one lot — explode into separate entries
+        setLotEntries((prev) => {
+          const next = [...prev];
+          next.splice(idx, 1, ...lines);
+          return next;
+        });
+        return;
+      }
+      if (lines.length === 1) {
+        setLotEntries((prev) => prev.map((e, i) => (i === idx ? lines[0] : e)));
+        return;
+      }
+      // all-blank paste (e.g. trailing newline only) — fall through to normal update below
+    }
     setLotEntries((prev) => prev.map((e, i) => (i === idx ? val : e)));
   };
 
-  // Extract lot number from text (first number sequence)
+  // Extract lot number from text (first number sequence). A lot number is always digits-only —
+  // strip any stray glued-on characters (e.g. a leading "\") and any thousand separators.
   const extractLotNumber = (text: string): string | null => {
-    const m = text.match(/\d{1,3}(?:,\d{3})+|\d+/);
-    return m ? m[0].replace(/,/g, "") : null;
+    const m = text.match(/\d{1,3}(?:[,.]\d{3})+|\d+/);
+    return m ? m[0].replace(/[^\d]/g, "") : null;
   };
 
   // Valid lots = non-empty entries with an extractable lot number
