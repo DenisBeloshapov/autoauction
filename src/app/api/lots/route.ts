@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getAuthUser } from '@/lib/session'
+import { maybeCleanupStaleLots } from '@/lib/cleanup'
 
 export async function GET(req: Request) {
   const user = await getAuthUser(req)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  // Fallback cleanup trigger (rate-limited internally) — fire-and-forget,
+  // never blocks this request or lets a cleanup failure affect the response.
+  void maybeCleanupStaleLots()
 
   const url = new URL(req.url)
   const status = url.searchParams.get('status') || undefined
@@ -152,14 +157,9 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // Admins can delete any lot (regardless of status).
-    // FK relations: EmailBatch (nullable, Restrict), WonLot (one-to-one, Restrict).
-    // Clean up related rows first so deletion always succeeds.
-    if (lot.wonLotId) {
-      // Delete delivery requests tied to the won lot, then the won lot itself
-      await db.deliveryRequest.deleteMany({ where: { wonLotId: lot.wonLotId } })
-      await db.wonLot.delete({ where: { id: lot.wonLotId } })
-    }
+    // Admins can delete any lot (regardless of status). WonLot and
+    // DeliveryRequest both cascade-delete at the DB level (onDelete: Cascade
+    // in schema.prisma), so no manual pre-cleanup of those is needed.
     // Detach from EmailBatch (set FK to null) — keeps the batch record intact
     if (lot.emailBatchId) {
       await db.lot.update({ where: { id: lotId }, data: { emailBatchId: null } })

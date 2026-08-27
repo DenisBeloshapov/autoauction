@@ -29,6 +29,7 @@ import {
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useConfirm } from "./ConfirmDialog";
 import { AppShell, type Tab } from "./AppShell";
+import { RefreshButton } from "./RefreshButton";
 import { Modal } from "./Modal";
 import { StatusBadge } from "./StatusBadge";
 import { toast } from "sonner";
@@ -367,6 +368,7 @@ export function AdminPanel() {
           <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
             <h1 className="aa-serif text-2xl font-semibold">{t("nav.requests")}</h1>
             <div className="flex items-center gap-2 flex-wrap">
+              <RefreshButton onRefresh={loadLots} label={t("common.refresh")} />
               <button onClick={() => setShowWonModal(true)} className="h-10 px-3 rounded-md border border-border hover:bg-muted text-sm font-semibold flex items-center gap-1.5 transition">
                 <Trophy className="w-4 h-4" /><span className="hidden sm:inline">{t("wonLots.acceptBids")}</span>
               </button>
@@ -399,7 +401,7 @@ export function AdminPanel() {
       )}
 
 
-      {activeTab === "delivery" && <AdminDelivery wonLots={wonLots} setWonLots={setWonLots} authHeaders={authHeaders} t={t} />}
+      {activeTab === "delivery" && <AdminDelivery wonLots={wonLots} setWonLots={setWonLots} authHeaders={authHeaders} onRefresh={loadWonLots} t={t} />}
 
       {activeTab === "clients" && (
         <div>
@@ -407,9 +409,12 @@ export function AdminPanel() {
             <>
               <div className="flex items-center justify-between mb-5">
                 <h1 className="aa-serif text-2xl font-semibold">{t("nav.clients")}</h1>
-                <button onClick={() => setShowAddClient(true)} className="hidden md:flex h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-semibold items-center gap-1.5 hover:bg-primary/90 transition-colors">
-                  <Plus className="w-4 h-4" /> {t("clients.add")}
-                </button>
+                <div className="flex items-center gap-2">
+                  <RefreshButton onRefresh={loadClients} label={t("common.refresh")} />
+                  <button onClick={() => setShowAddClient(true)} className="hidden md:flex h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-semibold items-center gap-1.5 hover:bg-primary/90 transition-colors">
+                    <Plus className="w-4 h-4" /> {t("clients.add")}
+                  </button>
+                </div>
               </div>
               {clients.length === 0 ? (
                 <EmptyState icon={<Users className="w-10 h-10 text-muted-foreground" />} text={t("clients.noClients")} />
@@ -437,7 +442,16 @@ export function AdminPanel() {
                   <button onClick={() => setDrilledClientId(null)} className="mb-4 text-sm font-medium text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition">
                     <ArrowLeft className="w-4 h-4" /> {t("nav.clients")}
                   </button>
-                  <div className="mb-5"><h1 className="aa-serif text-2xl font-semibold">{client?.name || client?.username || "—"}</h1><p className="text-sm text-muted-foreground mt-1">@{client?.username} · {list.length} {t("clients.lotsCount").toLowerCase()}</p></div>
+                  <div className="mb-5 flex items-center justify-between gap-3">
+                    <div><h1 className="aa-serif text-2xl font-semibold">{client?.name || client?.username || "—"}</h1><p className="text-sm text-muted-foreground mt-1">@{client?.username} · {list.length} {t("clients.lotsCount").toLowerCase()}</p></div>
+                    <RefreshButton
+                      onRefresh={async () => {
+                        const fresh = await loadClientLots(drilledClientId);
+                        setClientLotsCache((prev) => ({ ...prev, [drilledClientId]: fresh }));
+                      }}
+                      label={t("common.refresh")}
+                    />
+                  </div>
                   {clientLotsLoading === drilledClientId ? (
                     <div className="aa-card p-10 flex items-center justify-center"><CircleNotch className="w-6 h-6 animate-spin text-primary" /></div>
                   ) : list.length === 0 ? (
@@ -475,7 +489,10 @@ export function AdminPanel() {
 
       {activeTab === "emailHistory" && (
         <div>
-          <h1 className="aa-serif text-2xl font-semibold mb-6">{t("email.history")}</h1>
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="aa-serif text-2xl font-semibold">{t("email.history")}</h1>
+            <RefreshButton onRefresh={loadBatches} label={t("common.refresh")} />
+          </div>
           {batches.length === 0 ? (
             <EmptyState icon={<Envelope className="w-10 h-10 text-muted-foreground" />} text="—" />
           ) : (
@@ -712,7 +729,7 @@ function AdminLotsGrouped({ lots, t, selectedIds, onToggleSelect, onToggleSelect
   </>);
 }
 
-function AdminDelivery({ wonLots, setWonLots, authHeaders, t }: { wonLots: WonLot[]; setWonLots: React.Dispatch<React.SetStateAction<WonLot[]>>; authHeaders: HeadersInit; t: (k: string) => string }) {
+function AdminDelivery({ wonLots, setWonLots, authHeaders, onRefresh, t }: { wonLots: WonLot[]; setWonLots: React.Dispatch<React.SetStateAction<WonLot[]>>; authHeaders: HeadersInit; onRefresh: () => Promise<void>; t: (k: string) => string }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -770,7 +787,7 @@ function AdminDelivery({ wonLots, setWonLots, authHeaders, t }: { wonLots: WonLo
 
   return (
     <div>
-      <div className="mb-5"><h1 className="aa-serif text-2xl font-semibold">{t("nav.adminData")}</h1></div>
+      <div className="mb-5 flex items-center justify-between"><h1 className="aa-serif text-2xl font-semibold">{t("nav.adminData")}</h1><RefreshButton onRefresh={onRefresh} label={t("common.refresh")} /></div>
       <div className="mb-4">
         <div className="relative">
           <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />

@@ -19,10 +19,12 @@ import {
   Calendar,
   Coins,
   Cube,
+  ClipboardText,
 } from "@phosphor-icons/react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { AppShell, type Tab } from "./AppShell";
+import { RefreshButton } from "./RefreshButton";
 import { Modal } from "./Modal";
 import { StatusBadge } from "./StatusBadge";
 import { toast } from "sonner";
@@ -164,6 +166,20 @@ export function ClientPanel() {
   const removeLotEntry = (idx: number) => {
     setLotEntries((prev) => prev.filter((_, i) => i !== idx));
   };
+  const pasteFromClipboard = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+      if (lines.length === 0) return;
+      setLotEntries((prev) => {
+        const allEmpty = prev.every((e) => e.trim() === "");
+        return allEmpty ? lines : [...prev.filter((e) => e.trim() !== ""), ...lines];
+      });
+    } catch {
+      toast.error(t("lots.clipboardError"));
+    }
+  };
+
   const updateLotEntry = (idx: number, val: string) => {
     if (val.includes("\n")) {
       const lines = val.split("\n").map((l) => l.trim()).filter(Boolean);
@@ -313,14 +329,20 @@ export function ClientPanel() {
         <div>
           <div className="hidden md:flex items-center justify-between mb-6">
             <h1 className="aa-serif text-2xl font-semibold">{t("nav.requests")}</h1>
-            <button
-              onClick={() => setShowAdd(true)}
-              className="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-1.5 hover:bg-primary/90 transition-colors"
-            >
-              <Plus className="w-4 h-4" /> {t("lots.add")}
-            </button>
+            <div className="flex items-center gap-2">
+              <RefreshButton onRefresh={() => loadData(true)} label={t("common.refresh")} />
+              <button
+                onClick={() => setShowAdd(true)}
+                className="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-semibold flex items-center gap-1.5 hover:bg-primary/90 transition-colors"
+              >
+                <Plus className="w-4 h-4" /> {t("lots.add")}
+              </button>
+            </div>
           </div>
-          <h1 className="aa-serif md:hidden text-xl font-semibold mb-4">{t("nav.requests")}</h1>
+          <div className="md:hidden flex items-center justify-between mb-4">
+            <h1 className="aa-serif text-xl font-semibold">{t("nav.requests")}</h1>
+            <RefreshButton onRefresh={() => loadData(true)} label={t("common.refresh")} />
+          </div>
 
           {lots.length === 0 ? (
             <EmptyState icon={<Package className="w-10 h-10 text-muted-foreground" />} text={t("lots.noLots")} />
@@ -336,7 +358,10 @@ export function ClientPanel() {
 
       {activeTab === "delivery" && (
         <div>
-          <h1 className="aa-serif text-2xl font-semibold mb-6">{t("nav.wonSection")}</h1>
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="aa-serif text-2xl font-semibold">{t("nav.wonSection")}</h1>
+            <RefreshButton onRefresh={() => loadData(true)} label={t("common.refresh")} />
+          </div>
           {wonLots.length === 0 ? (
             <EmptyState icon={<Trophy className="w-10 h-10 text-muted-foreground" />} text={t("wonLots.noWonLots")} />
           ) : (
@@ -466,6 +491,14 @@ export function ClientPanel() {
         }
       >
         <div className="space-y-4">
+          {/* Paste from clipboard */}
+          <button
+            onClick={pasteFromClipboard}
+            className="w-full h-9 rounded-md border border-dashed border-border hover:border-primary/40 hover:bg-accent/40 text-xs font-semibold text-muted-foreground hover:text-primary flex items-center justify-center gap-1.5 transition"
+          >
+            <ClipboardText className="w-3.5 h-3.5" /> {t("lots.pasteFromClipboard")}
+          </button>
+
           {/* Lot entries list */}
           <div className="space-y-3">
             {lotEntries.map((entry, idx) => {

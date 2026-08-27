@@ -49,28 +49,36 @@ async function composeEmail(lotIds: string[], recipientEmailInput?: string) {
   const sentDate = new Date().toLocaleDateString('ru-RU')
   const subject = subjectTemplate.replace(/\{date\}/g, sentDate)
 
-  // Group identical comments: one comment text → list of lot numbers that share it.
-  const byComment = new Map<string, string[]>()
+  // Group lots by shared comment ("Группа") — same grouping concept as the UI.
+  // Each group (and the no-comment bucket) becomes one block in the email,
+  // separated by a line of "—" characters. No duplicate comment summary + flat
+  // list anymore — the comment is shown once, right above the lots it covers.
+  const byComment = new Map<string, typeof lots>()
+  const noComment: typeof lots = []
   lots.forEach((lot) => {
     const c = lot.comment && lot.comment.trim() ? lot.comment.trim() : null
-    if (!c) return
+    if (!c) { noComment.push(lot); return }
     if (!byComment.has(c)) byComment.set(c, [])
-    byComment.get(c)!.push(lot.lotNumber)
+    byComment.get(c)!.push(lot)
   })
 
-  const commentsBlock: string[] = []
-  byComment.forEach((lotNumbers, comment) => {
-    if (byComment.size === 1 && lotNumbers.length > 1) {
-      commentsBlock.push(comment)
-    } else {
-      const nums = lotNumbers.map((n) => `#${n}`).join(', ')
-      commentsBlock.push(`Лот ${nums}: ${comment}`)
-    }
+  const SEPARATOR = '—'.repeat(32)
+  const blocks: string[] = []
+  let counter = 0
+
+  byComment.forEach((groupLots, comment) => {
+    const lines = [
+      `Группа: ${comment}`,
+      ...groupLots.map((l) => `${++counter}. Лот #${l.lotNumber} — ${l.rawText || '(нет описания)'}`),
+    ]
+    blocks.push(lines.join('\n'))
   })
 
-  const lotsBlock: string[] = lots.map(
-    (l, i) => `${i + 1}. Лот #${l.lotNumber} — ${l.rawText || '(нет описания)'}`
-  )
+  if (noComment.length > 0) {
+    blocks.push(
+      noComment.map((l) => `${++counter}. Лот #${l.lotNumber} — ${l.rawText || '(нет описания)'}`).join('\n')
+    )
+  }
 
   const bodyLines = [
     `Тема: ${subject}`,
@@ -81,11 +89,7 @@ async function composeEmail(lotIds: string[], recipientEmailInput?: string) {
     bodyLines.push(introTemplate.trim(), '')
   }
   bodyLines.push(
-    'Комментарий по лотам:',
-    commentsBlock.length ? commentsBlock.join('\n') : '(нет комментариев)',
-    '',
-    'Список лотов:',
-    lotsBlock.join('\n'),
+    blocks.join(`\n\n${SEPARATOR}\n\n`),
     '',
     `Всего лотов: ${lots.length}`,
     `Отправлено: ${new Date().toLocaleString('ru-RU')}`,
