@@ -58,6 +58,7 @@ export function Modal({ open, onClose, title, size = "md", children, footer }: M
               // Mobile: bottom sheet (rounded top, full width, slides up)
               "aa-sheet sm:rounded-xl",
               "mt-auto sm:mt-0",
+              "flex flex-col max-h-[92dvh] sm:max-h-[85vh]",
               sizeClass[size]
             )}
             initial={{ y: "100%", opacity: 0.6 }}
@@ -66,12 +67,12 @@ export function Modal({ open, onClose, title, size = "md", children, footer }: M
             transition={{ type: "spring", damping: 32, stiffness: 320 }}
           >
             {/* Mobile drag handle */}
-            <div className="sm:hidden pt-3 pb-1 flex justify-center">
+            <div className="sm:hidden pt-3 pb-1 flex justify-center flex-shrink-0">
               <div className="w-10 h-1.5 rounded-full bg-muted-foreground/30" />
             </div>
 
             {title && (
-              <div className="px-5 sm:px-6 pt-4 sm:pt-5 pb-4 flex items-center justify-between gap-4">
+              <div className="px-5 sm:px-6 pt-4 sm:pt-5 pb-4 flex items-center justify-between gap-4 flex-shrink-0">
                 <h2 className="text-base sm:text-lg font-bold text-foreground">{title}</h2>
                 <button
                   onClick={onClose}
@@ -82,11 +83,11 @@ export function Modal({ open, onClose, title, size = "md", children, footer }: M
                 </button>
               </div>
             )}
-            <div className="px-5 sm:px-6 py-5 max-h-[80vh] sm:max-h-[82vh] overflow-y-auto scroll-slim">
+            <div className="px-5 sm:px-6 py-5 flex-1 min-h-0 overflow-y-auto scroll-slim">
               {children}
             </div>
             {footer && (
-              <div className="px-5 sm:px-6 py-4 border-t border-border/60 bg-muted/30 flex items-center justify-end gap-2">
+              <div className="px-5 sm:px-6 py-4 border-t border-border/60 bg-muted/30 flex items-center justify-end gap-2 flex-shrink-0">
                 {footer}
               </div>
             )}
