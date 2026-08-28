@@ -2,7 +2,7 @@
   "name": "autoauction",
   "version": "1.0.0",
   "private": true,
-  "description": "AutoAuction — веб-приложение для управления японскими автомобильными аукционами",
+  "description": "AuctionWorks — веб-приложение для управления японскими автомобильными аукционами",
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "prisma generate --schema=./prisma/schema.prisma && prisma db push --schema=./prisma/schema.prisma --accept-data-loss && next build",

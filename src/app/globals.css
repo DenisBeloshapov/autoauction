@@ -38,7 +38,7 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  /* AutoAuction design tokens */
+  /* AuctionWorks design tokens */
   --color-aa: var(--aa);
   --color-aa-soft: var(--aa-soft);
   --color-aa-ink: var(--aa-ink);
@@ -142,7 +142,7 @@
   }
 }
 
-/* AutoAuction utility classes — flat, bordered, no gradients, no glow */
+/* AuctionWorks utility classes — flat, bordered, no gradients, no glow */
 .aa-card {
   border-radius: 12px;
   background: var(--card);

@@ -815,8 +815,8 @@ function AdminDelivery({ wonLots, setWonLots, authHeaders, onRefresh, t }: { won
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {awaitingMethod ? (
                       <StatusBadge status="AWAITING" label={t("wonStatus.awaitingMethod")} pulse />
-                    ) : (
-                      <StatusBadge status={wl.status} label={t(`wonStatus.${wl.status}`)} pulse={wl.status === "DELIVERY_REQUESTED"} />
+                    ) : wl.status === "DELIVERY_REQUESTED" ? null : (
+                      <StatusBadge status={wl.status} label={t(`wonStatus.${wl.status}`)} />
                     )}
                     {wl.status === "DELIVERY_REQUESTED" && (
                       <button

@@ -398,8 +398,8 @@ export function ClientPanel() {
                       </div>
                       {awaitingMethod ? (
                         <StatusBadge status="AWAITING" label={t("wonStatus.awaitingMethod")} pulse />
-                      ) : (
-                        <StatusBadge status={wl.status} label={t(`wonStatus.${wl.status}`)} pulse={wl.status === "DELIVERY_REQUESTED"} />
+                      ) : wl.status === "DELIVERY_REQUESTED" ? null : (
+                        <StatusBadge status={wl.status} label={t(`wonStatus.${wl.status}`)} />
                       )}
                     </div>
 
@@ -415,9 +415,6 @@ export function ClientPanel() {
                         <InfoRow icon={<Coins className="w-3.5 h-3.5" />} label={t("delivery.price")} value={wl.price != null ? `${wl.price.toLocaleString()} ${t("wonLots.currency")}` : "—"} mono />
                         {!awaitingMethod && (
                           <InfoRow icon={<Truck className="w-3.5 h-3.5" />} label={t("delivery.method")} value={req?.method ? t(`delivery.${req.method}`) : "—"} />
-                        )}
-                        {!awaitingMethod && (
-                          <InfoRow icon={<Calendar className="w-3.5 h-3.5" />} label={t("delivery.createdAt")} value={req ? new Date(req.createdAt).toLocaleString() : "—"} />
                         )}
                         {wl.lot.rawText && (
                           <div className="pt-2 mt-1 border-t border-border/60">
@@ -613,60 +610,61 @@ export function ClientPanel() {
             </label>
             <div className="grid grid-cols-1 gap-2">
               {METHODS.map((m) => (
-                <button
-                  key={m}
-                  onClick={() => { setDeliveryMethod(m); setDeliveryErrors({}); }}
-                  className={`text-left p-3 rounded-md border text-sm font-medium transition ${
-                    deliveryMethod === m
-                      ? "border-primary bg-accent text-accent-foreground shadow-sm"
-                      : "border-border hover:bg-muted hover:border-primary/30"
-                  }`}
-                >
-                  {t(`delivery.${m}`)}
-                </button>
+                <React.Fragment key={m}>
+                  <button
+                    onClick={() => { setDeliveryMethod(m); setDeliveryErrors({}); }}
+                    className={`text-left p-3 rounded-md border text-sm font-medium transition ${
+                      deliveryMethod === m
+                        ? "border-primary bg-accent text-accent-foreground shadow-sm"
+                        : "border-border hover:bg-muted hover:border-primary/30"
+                    }`}
+                  >
+                    {t(`delivery.${m}`)}
+                  </button>
+                  {m === "DUTY" && deliveryMethod === "DUTY" && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      className="space-y-3 pl-1 pt-1"
+                    >
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          {t("delivery.ownerFullName")} *
+                        </label>
+                        <input
+                          type="text"
+                          value={ownerFullName}
+                          onChange={(e) => { setOwnerFullName(e.target.value); if (deliveryErrors.ownerFullName) setDeliveryErrors((p) => ({ ...p, ownerFullName: false })); }}
+                          placeholder={t("delivery.ownerFullNamePlaceholder")}
+                          className={`w-full h-11 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-1 transition-colors ${
+                            deliveryErrors.ownerFullName
+                              ? "border-destructive focus:ring-destructive/30 focus:border-destructive"
+                              : "border-input focus:ring-foreground/30 focus:border-foreground/30"
+                          }`}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          {t("delivery.ownerAddress")} *
+                        </label>
+                        <input
+                          type="text"
+                          value={ownerAddress}
+                          onChange={(e) => { setOwnerAddress(e.target.value); if (deliveryErrors.ownerAddress) setDeliveryErrors((p) => ({ ...p, ownerAddress: false })); }}
+                          placeholder={t("delivery.ownerAddressPlaceholder")}
+                          className={`w-full h-11 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-1 transition-colors ${
+                            deliveryErrors.ownerAddress
+                              ? "border-destructive focus:ring-destructive/30 focus:border-destructive"
+                              : "border-input focus:ring-foreground/30 focus:border-foreground/30"
+                          }`}
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </React.Fragment>
               ))}
             </div>
           </div>
-          {deliveryMethod === "DUTY" && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              className="space-y-3"
-            >
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                  {t("delivery.ownerFullName")} *
-                </label>
-                <input
-                  type="text"
-                  value={ownerFullName}
-                  onChange={(e) => { setOwnerFullName(e.target.value); if (deliveryErrors.ownerFullName) setDeliveryErrors((p) => ({ ...p, ownerFullName: false })); }}
-                  placeholder={t("delivery.ownerFullNamePlaceholder")}
-                  className={`w-full h-11 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-1 transition-colors ${
-                    deliveryErrors.ownerFullName
-                      ? "border-destructive focus:ring-destructive/30 focus:border-destructive"
-                      : "border-input focus:ring-foreground/30 focus:border-foreground/30"
-                  }`}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                  {t("delivery.ownerAddress")} *
-                </label>
-                <input
-                  type="text"
-                  value={ownerAddress}
-                  onChange={(e) => { setOwnerAddress(e.target.value); if (deliveryErrors.ownerAddress) setDeliveryErrors((p) => ({ ...p, ownerAddress: false })); }}
-                  placeholder={t("delivery.ownerAddressPlaceholder")}
-                  className={`w-full h-11 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-1 transition-colors ${
-                    deliveryErrors.ownerAddress
-                      ? "border-destructive focus:ring-destructive/30 focus:border-destructive"
-                      : "border-input focus:ring-foreground/30 focus:border-foreground/30"
-                  }`}
-                />
-              </div>
-            </motion.div>
-          )}
         </div>
       </Modal>
 

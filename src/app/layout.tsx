@@ -24,17 +24,17 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AutoAuction — Управление японскими аукционными лотами",
+  title: "AuctionWorks — Управление японскими аукционными лотами",
   description:
     "Веб-приложение для автоматизации работы с японскими автомобильными аукционами: добавление лотов, отправка заявок, учёт выигрышей и управление доставкой.",
   keywords: [
-    "AutoAuction",
+    "AuctionWorks",
     "японские аукционы",
     "автомобили",
     "лоты",
     "доставка",
   ],
-  authors: [{ name: "AutoAuction" }],
+  authors: [{ name: "AuctionWorks" }],
 };
 
 // Disable iOS auto-zoom on input focus (font-size < 16px triggers zoom).

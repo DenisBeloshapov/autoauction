@@ -1,5 +1,5 @@
 /**
- * AutoAuction — Realtime WebSocket Service
+ * AuctionWorks — Realtime WebSocket Service
  *
  * Принимает HTTP POST от API-роутов Next.js и эмитит события всем
  * подключённым клиентам через socket.io.
@@ -72,5 +72,5 @@ io.on("connection", (socket) => {
 });
 
 httpServer.listen(PORT, () => {
-  console.log(`[ws] AutoAuction realtime service on http://localhost:${PORT}`);
+  console.log(`[ws] AuctionWorks realtime service on http://localhost:${PORT}`);
 });

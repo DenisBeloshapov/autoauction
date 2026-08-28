@@ -47,7 +47,7 @@ export function LoginPage() {
               </span>
             </div>
             <h1 className="aa-serif text-2xl font-semibold text-foreground">
-              AutoAuction
+              AuctionWorks
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
               {t("app.tagline")}

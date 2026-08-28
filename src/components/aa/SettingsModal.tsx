@@ -245,7 +245,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
                     type="text"
                     value={settings.smtpFrom || ""}
                     onChange={(e) => setSettings({ ...settings, smtpFrom: e.target.value })}
-                    placeholder='AutoAuction <sender@gmail.com>'
+                    placeholder='AuctionWorks <sender@gmail.com>'
                     className={`${inputClass} mt-1`}
                   />
                 </div>

@@ -35,7 +35,7 @@ export function AppShell({ tabs, activeTab, onTabChange, children, fab }: AppShe
           <Globe className="w-5 h-5 text-background" weight="bold" />
         </div>
         <div className="min-w-0">
-          <div className="text-base font-bold text-foreground truncate">AutoAuction</div>
+          <div className="text-base font-bold text-foreground truncate">AuctionWorks</div>
           <div className="text-[11px] text-muted-foreground truncate">
             {user?.role === "ADMIN" ? t("app.adminPanel") : t("app.clientPanel")}
           </div>
@@ -102,7 +102,7 @@ export function AppShell({ tabs, activeTab, onTabChange, children, fab }: AppShe
             <Globe className="w-4 h-4 text-background" weight="bold" />
           </div>
           <div className="min-w-0">
-            <div className="text-sm font-bold truncate leading-tight">AutoAuction</div>
+            <div className="text-sm font-bold truncate leading-tight">AuctionWorks</div>
             <div className="text-[10px] text-muted-foreground truncate leading-tight">
               {user?.role === "ADMIN" ? t("app.adminPanel") : t("app.clientPanel")}
             </div>
@@ -193,7 +193,7 @@ export function AppShell({ tabs, activeTab, onTabChange, children, fab }: AppShe
         </motion.div>
       </main>
       <footer className="hidden md:block mt-auto ml-[260px] px-10 py-5 border-t border-border text-xs text-muted-foreground text-center">
-        AutoAuction · v1.0 · {new Date().getFullYear()}
+        AuctionWorks · v1.0 · {new Date().getFullYear()}
       </footer>
       {MobileBottomBar}
       {MobileFab}

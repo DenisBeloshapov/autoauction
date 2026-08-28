@@ -74,7 +74,7 @@ const translations: Record<Language, Record<string, string>> = {
     // wonLots (7)
     "wonLots.title": "Выигранные лоты",
     "wonLots.mark": "Отметить как выигранные",
-    "wonLots.acceptBids": "Принять ставки",
+    "wonLots.acceptBids": "Отметить выигранные",
     "wonLots.inputText": "Вставьте результаты торгов",
     "wonLots.inputTextPlaceholder": "12345 Toyota Camry white 500000\n12346 Honda Civic black 750000",
     "wonLots.price": "Цена",
@@ -88,17 +88,17 @@ const translations: Record<Language, Record<string, string>> = {
     "delivery.ownerAddress": "Адрес владельца",
     "delivery.ownerFullNamePlaceholder": "Иванов Иван Иванович",
     "delivery.ownerAddressPlaceholder": "г. Москва, ул. Примерная, 1",
-    "delivery.DUTY": "Полный импорт (пошлина)",
-    "delivery.DISASSEMBLY": "Разборка на запчасти",
-    "delivery.CUT_REAR": "Резка сзади (полукузов)",
-    "delivery.CUT_FRONT": "Резка спереди (полукузов)",
-    "delivery.CUT_REAR_ARCS": "Резка задних арок",
+    "delivery.DUTY": "Пошлина",
+    "delivery.DISASSEMBLY": "Разбор",
+    "delivery.CUT_REAR": "Распил по заду",
+    "delivery.CUT_FRONT": "Распил по переду",
+    "delivery.CUT_REAR_ARCS": "Распил по задним аркам",
     "delivery.chooseMethod": "Выбрать доставку",
     "delivery.noRequests": "Нет запросов на доставку",
     "delivery.searchPlaceholder": "Поиск по номеру лота, клиенту...",
     "delivery.found": "Найдено",
     "delivery.noSearchResults": "По вашему запросу ничего не найдено",
-    "delivery.confirm": "Подтвердить",
+    "delivery.confirm": "На контракте",
     "delivery.complete": "Завершить",
 
     // email (8)
@@ -142,7 +142,7 @@ const translations: Record<Language, Record<string, string>> = {
     "common.total": "Всего",
 
     // extras (8)
-    "app.title": "AutoAuction",
+    "app.title": "AuctionWorks",
     "app.tagline": "Японские автоаукционы",
     "app.clientPanel": "Панель клиента",
     "app.adminPanel": "Панель администратора",
@@ -179,9 +179,9 @@ const translations: Record<Language, Record<string, string>> = {
 
     // WonLot statuses
     "wonStatus.WON": "Выигран",
-    "wonStatus.awaitingMethod": "Ожидает выбора ввоза",
+    "wonStatus.awaitingMethod": "Ожидает данные",
     "wonStatus.DELIVERY_REQUESTED": "Запрос доставки",
-    "wonStatus.DELIVERY_CONFIRMED": "Доставка подтверждена",
+    "wonStatus.DELIVERY_CONFIRMED": "На контракте",
     "wonStatus.COMPLETED": "Завершён",
 
     // Won preview
@@ -203,7 +203,7 @@ const translations: Record<Language, Record<string, string>> = {
     "auth.logout": "Sign out",
     "auth.username": "Username",
     "auth.password": "Password",
-    "auth.loginTitle": "Sign in to AutoAuction",
+    "auth.loginTitle": "Sign in to AuctionWorks",
     "auth.invalidCredentials": "Invalid username or password",
 
     // navigation (5)
@@ -263,7 +263,7 @@ const translations: Record<Language, Record<string, string>> = {
     // wonLots (7)
     "wonLots.title": "Won lots",
     "wonLots.mark": "Mark as won",
-    "wonLots.acceptBids": "Accept bids",
+    "wonLots.acceptBids": "Mark as won",
     "wonLots.inputText": "Paste auction results",
     "wonLots.inputTextPlaceholder": "12345 Toyota Camry white 500000\n12346 Honda Civic black 750000",
     "wonLots.price": "Price",
@@ -277,17 +277,17 @@ const translations: Record<Language, Record<string, string>> = {
     "delivery.ownerAddress": "Owner address",
     "delivery.ownerFullNamePlaceholder": "John Doe",
     "delivery.ownerAddressPlaceholder": "123 Main St, Springfield",
-    "delivery.DUTY": "Full import (duty paid)",
-    "delivery.DISASSEMBLY": "Disassembly for parts",
-    "delivery.CUT_REAR": "Rear cut (half body)",
-    "delivery.CUT_FRONT": "Front cut (half body)",
-    "delivery.CUT_REAR_ARCS": "Rear arcs cut",
+    "delivery.DUTY": "Duty",
+    "delivery.DISASSEMBLY": "Disassembly",
+    "delivery.CUT_REAR": "Rear cut",
+    "delivery.CUT_FRONT": "Front cut",
+    "delivery.CUT_REAR_ARCS": "Rear arches cut",
     "delivery.chooseMethod": "Choose delivery",
     "delivery.noRequests": "No delivery requests",
     "delivery.searchPlaceholder": "Search by lot number, client...",
     "delivery.found": "Found",
     "delivery.noSearchResults": "No results found",
-    "delivery.confirm": "Confirm",
+    "delivery.confirm": "On contract",
     "delivery.complete": "Complete",
 
     // email (8)
@@ -331,7 +331,7 @@ const translations: Record<Language, Record<string, string>> = {
     "common.total": "Total",
 
     // extras (8)
-    "app.title": "AutoAuction",
+    "app.title": "AuctionWorks",
     "app.tagline": "Japanese car auctions",
     "app.clientPanel": "Client panel",
     "app.adminPanel": "Admin panel",
@@ -367,9 +367,9 @@ const translations: Record<Language, Record<string, string>> = {
 
     // WonLot statuses
     "wonStatus.WON": "Won",
-    "wonStatus.awaitingMethod": "Awaiting import method",
+    "wonStatus.awaitingMethod": "Awaiting data",
     "wonStatus.DELIVERY_REQUESTED": "Delivery requested",
-    "wonStatus.DELIVERY_CONFIRMED": "Delivery confirmed",
+    "wonStatus.DELIVERY_CONFIRMED": "On contract",
     "wonStatus.COMPLETED": "Completed",
 
     // Won preview
