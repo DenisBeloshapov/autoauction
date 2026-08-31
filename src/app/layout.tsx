@@ -35,6 +35,16 @@ export const metadata: Metadata = {
     "доставка",
   ],
   authors: [{ name: "AuctionWorks" }],
+  manifest: "/manifest.json",
+  icons: {
+    icon: [{ url: "/favicon-32.png", sizes: "32x32", type: "image/png" }],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "AuctionWorks",
+  },
 };
 
 // Disable iOS auto-zoom on input focus (font-size < 16px triggers zoom).
@@ -45,6 +55,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
+  themeColor: "#111111",
 };
 
 export default function RootLayout({

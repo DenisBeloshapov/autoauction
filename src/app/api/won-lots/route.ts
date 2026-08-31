@@ -79,6 +79,7 @@ export async function POST(req: Request) {
       price: number | null
       status: 'created' | 'updated' | 'lot_not_found'
     }[] = []
+    const newlyWonByClient = new Map<string, string[]>()
 
     for (const entry of entries) {
       const lot = await db.lot.findFirst({
@@ -133,12 +134,30 @@ export async function POST(req: Request) {
           price: safePrice,
           status: 'created',
         })
+        if (!newlyWonByClient.has(lot.clientId)) newlyWonByClient.set(lot.clientId, [])
+        newlyWonByClient.get(lot.clientId)!.push(entry.lotNumber)
       }
     }
 
     // Emit WebSocket event
     const { emitRealtime, REALTIME_EVENTS } = await import('@/lib/realtime')
     emitRealtime({ event: REALTIME_EVENTS.WONLOT_CREATED, data: { results } })
+
+    if (newlyWonByClient.size > 0) {
+      const { sendPushToUser } = await import('@/lib/push')
+      await Promise.all(
+        Array.from(newlyWonByClient.entries()).map(([clientId, lotNumbers]) =>
+          sendPushToUser(clientId, {
+            title: 'Лот выигран',
+            body:
+              lotNumbers.length === 1
+                ? `Лот #${lotNumbers[0]} выигран — проверьте детали`
+                : `Выиграно лотов: ${lotNumbers.length} (#${lotNumbers.join(', #')})`,
+            url: '/',
+          })
+        )
+      )
+    }
 
     return NextResponse.json({
       success: true,

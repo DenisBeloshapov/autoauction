@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LanguageToggle } from "@/components/aa/LanguageToggle";
 import { SettingsModal } from "@/components/aa/SettingsModal";
+import { NotificationBell } from "@/components/aa/NotificationBell";
 import { cn } from "@/lib/utils";
 
 export interface Tab {
@@ -24,9 +25,12 @@ export interface AppShellProps {
 }
 
 export function AppShell({ tabs, activeTab, onTabChange, children, fab }: AppShellProps) {
-  const { user, logout } = useAuth();
+  const { user, token, logout } = useAuth();
   const { t } = useLanguage();
   const [showSettings, setShowSettings] = useState(false);
+  const authHeaders: HeadersInit = token
+    ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
+    : { "Content-Type": "application/json" };
 
   const Sidebar = (
     <aside className="hidden md:flex md:w-[260px] md:flex-col md:fixed md:inset-y-0 md:left-0 border-r border-border bg-background/70 backdrop-blur-xl px-5 py-6 z-30">
@@ -72,6 +76,7 @@ export function AppShell({ tabs, activeTab, onTabChange, children, fab }: AppShe
         <div className="text-xs text-muted-foreground mb-2">{user?.name || user?.username}</div>
         <div className="flex items-center justify-between gap-2">
           <LanguageToggle />
+          <NotificationBell authHeaders={authHeaders} />
           {user?.role === "ADMIN" && (
             <button
               onClick={() => setShowSettings(true)}
@@ -110,6 +115,7 @@ export function AppShell({ tabs, activeTab, onTabChange, children, fab }: AppShe
         </div>
         <div className="flex items-center gap-2">
           <LanguageToggle />
+          <NotificationBell authHeaders={authHeaders} />
           {user?.role === "ADMIN" && (
             <button
               onClick={() => setShowSettings(true)}

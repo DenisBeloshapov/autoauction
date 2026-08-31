@@ -238,6 +238,11 @@ export function ClientPanel() {
       }
       if (created > 0) {
         toast.success(t("lots.batchCreated").replace("{n}", String(created)));
+        fetch("/api/notify/new-lots", {
+          method: "POST",
+          headers: authHeaders,
+          body: JSON.stringify({ count: created }),
+        }).catch(() => {});
       }
       if (failed === 0) {
         setLotEntries([""]);
