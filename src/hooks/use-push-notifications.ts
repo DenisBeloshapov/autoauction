@@ -84,6 +84,21 @@ export function usePushNotifications(authHeaders: HeadersInit) {
     }
   }, [supported, needsInstall, authHeaders]);
 
+  /** Pings /api/push/test right after subscribing — tells you exactly what's
+   * wrong (not configured server-side / lost the subscription / actually sent)
+   * instead of a silent "maybe it works, maybe it doesn't". */
+  const testSelf = useCallback(async (): Promise<
+    { ok: true } | { ok: false; reason: string; message: string }
+  > => {
+    try {
+      const res = await fetch("/api/push/test", { method: "POST", headers: authHeaders });
+      const data = await res.json();
+      return data;
+    } catch {
+      return { ok: false, reason: "network_error", message: "Не удалось связаться с сервером" };
+    }
+  }, [authHeaders]);
+
   const unsubscribe = useCallback(async () => {
     if (!supported) return;
     setLoading(true);
@@ -104,5 +119,5 @@ export function usePushNotifications(authHeaders: HeadersInit) {
     }
   }, [supported, authHeaders]);
 
-  return { supported, needsInstall, permission, subscribed, loading, subscribe, unsubscribe };
+  return { supported, needsInstall, permission, subscribed, loading, subscribe, unsubscribe, testSelf };
 }

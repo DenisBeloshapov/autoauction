@@ -53,3 +53,7 @@ export async function sendPushToRole(role: 'ADMIN' | 'CLIENT', payload: PushPayl
 export function getVapidPublicKey() {
   return VAPID_PUBLIC
 }
+
+export function isPushConfigured() {
+  return !!(VAPID_PUBLIC && VAPID_PRIVATE)
+}

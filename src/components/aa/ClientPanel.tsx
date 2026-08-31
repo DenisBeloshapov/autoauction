@@ -29,6 +29,7 @@ import { Modal } from "./Modal";
 import { StatusBadge } from "./StatusBadge";
 import { toast } from "sonner";
 import { useRealtime } from "@/hooks/use-realtime";
+import { useRefreshOnFocus } from "@/hooks/use-refresh-on-focus";
 import { useConfirm } from "./ConfirmDialog";
 
 type Lot = {
@@ -153,6 +154,10 @@ export function ClientPanel() {
   useRealtime(["lot:created", "lot:updated", "lot:deleted", "wonlot:created", "delivery:created"], () => {
     loadData(true);
   });
+
+  // Возврат в приложение (свернули/развернули, переключили вкладку) — тоже
+  // тихо подтягиваем свежие данные. Не зависит от WS/realtime-сервиса.
+  useRefreshOnFocus(() => loadData(true));
 
   const tabs: Tab[] = [
     { key: "myLots", label: t("nav.requests"), icon: <ListChecks className="w-4 h-4" /> },

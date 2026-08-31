@@ -34,6 +34,7 @@ import { Modal } from "./Modal";
 import { StatusBadge } from "./StatusBadge";
 import { toast } from "sonner";
 import { useRealtime } from "@/hooks/use-realtime";
+import { useRefreshOnFocus } from "@/hooks/use-refresh-on-focus";
 import { cn, stripLotNumber, parseSearchTerms } from "@/lib/utils";
 
 type Lot = {
@@ -218,6 +219,9 @@ export function AdminPanel() {
   useRealtime(["lot:created", "lot:updated", "lot:deleted", "wonlot:created", "delivery:created", "email:sent"], () => {
     loadLots(); loadWonLots(); loadBatches();
   });
+
+  // Возврат в приложение — тихо подтягиваем свежие данные, не завися от WS
+  useRefreshOnFocus(() => { loadLots(); loadWonLots(); loadBatches(); });
 
   const tabs: Tab[] = [
     { key: "allLots", label: t("nav.requests"), icon: <Stack className="w-4 h-4" /> },
