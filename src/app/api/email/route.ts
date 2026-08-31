@@ -22,15 +22,41 @@ async function getTemplateSettings() {
     const rows = await db.setting.findMany({
       where: { key: { in: ['emailSubjectTemplate', 'emailIntroTemplate'] } },
     })
-    const subjectTemplate = rows.find((r) => r.key === 'emailSubjectTemplate')?.value || 'Лоты от {date}'
+    const subjectTemplate = rows.find((r) => r.key === 'emailSubjectTemplate')?.value || 'Лоты {n}'
     const introTemplate = rows.find((r) => r.key === 'emailIntroTemplate')?.value || ''
     return { subjectTemplate, introTemplate }
   } catch {
-    return { subjectTemplate: 'Лоты от {date}', introTemplate: '' }
+    return { subjectTemplate: 'Лоты {n}', introTemplate: '' }
   }
 }
 
-async function composeEmail(lotIds: string[], recipientEmailInput?: string) {
+// Daily sequential email number ("Лоты 1", "Лоты 2", ...), resets each new
+// calendar day (UTC). `commit=false` (preview) just peeks at what the next
+// number WOULD be without consuming it — so previewing repeatedly doesn't
+// burn through numbers for emails that never actually get sent.
+async function peekOrConsumeEmailNumber(commit: boolean): Promise<number> {
+  const today = new Date().toISOString().slice(0, 10)
+  const key = 'emailDailyCounter'
+  let count = 0
+  try {
+    const row = await db.setting.findUnique({ where: { key } })
+    const [storedDate, storedCount] = (row?.value || '').split('|')
+    count = storedDate === today ? parseInt(storedCount, 10) || 0 : 0
+  } catch {
+    count = 0
+  }
+  const next = count + 1
+  if (commit) {
+    await db.setting.upsert({
+      where: { key },
+      update: { value: `${today}|${next}` },
+      create: { key, value: `${today}|${next}` },
+    })
+  }
+  return next
+}
+
+async function composeEmail(lotIds: string[], recipientEmailInput?: string, commit = false) {
   const recipientEmail =
     recipientEmailInput ||
     process.env.DEFAULT_EMAIL_RECIPIENT ||
@@ -46,8 +72,8 @@ async function composeEmail(lotIds: string[], recipientEmailInput?: string) {
   if (lots.length === 0) return null
 
   const { subjectTemplate, introTemplate } = await getTemplateSettings()
-  const sentDate = new Date().toLocaleDateString('ru-RU')
-  const subject = subjectTemplate.replace(/\{date\}/g, sentDate)
+  const emailNumber = await peekOrConsumeEmailNumber(commit)
+  const subject = subjectTemplate.replace(/\{n\}/g, String(emailNumber))
 
   // Group lots by shared comment ("Группа") — same grouping concept as the UI.
   // Each group (and the no-comment bucket) becomes one block in the email,
@@ -65,26 +91,21 @@ async function composeEmail(lotIds: string[], recipientEmailInput?: string) {
   const SEPARATOR = '—'.repeat(32)
   const blocks: string[] = []
   let counter = 0
+  // rawText already starts with the lot number as pasted by the client
+  // (e.g. "55405/Honda AA Nagoya / ..."), so prefixing "#lotNumber —" again
+  // duplicated it. Just "N. Лот <rawText>" — the number is already in there.
+  const formatLot = (l: (typeof lots)[number]) => `${++counter}. Лот ${l.rawText || `#${l.lotNumber} (нет описания)`}`
 
   byComment.forEach((groupLots, comment) => {
-    const lines = [
-      `Группа: ${comment}`,
-      ...groupLots.map((l) => `${++counter}. Лот #${l.lotNumber} — ${l.rawText || '(нет описания)'}`),
-    ]
+    const lines = [`Группа: ${comment}`, ...groupLots.map(formatLot)]
     blocks.push(lines.join('\n'))
   })
 
   if (noComment.length > 0) {
-    blocks.push(
-      noComment.map((l) => `${++counter}. Лот #${l.lotNumber} — ${l.rawText || '(нет описания)'}`).join('\n')
-    )
+    blocks.push(noComment.map(formatLot).join('\n'))
   }
 
-  const bodyLines = [
-    `Тема: ${subject}`,
-    `Кому: ${recipientEmail}`,
-    '',
-  ]
+  const bodyLines: string[] = []
   if (introTemplate.trim()) {
     bodyLines.push(introTemplate.trim(), '')
   }
@@ -117,7 +138,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'lotIds is required' }, { status: 400 })
     }
 
-    const composed = await composeEmail(lotIds, body.recipientEmail)
+    const composed = await composeEmail(lotIds, body.recipientEmail, mode === 'send')
     if (!composed) {
       return NextResponse.json({ error: 'No lots found for provided ids' }, { status: 404 })
     }

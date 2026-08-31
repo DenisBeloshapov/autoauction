@@ -182,7 +182,7 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
                   type="text"
                   value={settings.emailSubjectTemplate || ""}
                   onChange={(e) => setSettings({ ...settings, emailSubjectTemplate: e.target.value })}
-                  placeholder="Лоты от {date}"
+                  placeholder="Лоты {n}"
                   className={`${inputClass} mt-1 aa-mono`}
                 />
                 <p className="text-[11px] text-muted-foreground mt-1">{t("settings.emailSubjectHint")}</p>
