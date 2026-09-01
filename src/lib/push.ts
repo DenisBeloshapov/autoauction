@@ -33,9 +33,13 @@ export async function sendPushToUser(userId: string, payload: PushPayload) {
         )
       } catch (err) {
         const statusCode = (err as { statusCode?: number })?.statusCode
-        // 404/410 = the browser dropped this subscription — stop trying it
-        if (statusCode === 404 || statusCode === 410) {
+        // 404/410 = the browser dropped this subscription.
+        // 403 = VAPID key mismatch (e.g. keys were rotated after this
+        // subscription was created) — also permanent, will never succeed
+        // until the client re-subscribes with the current public key.
+        if (statusCode === 404 || statusCode === 410 || statusCode === 403) {
           await db.pushSubscription.delete({ where: { id: sub.id } }).catch(() => {})
+          if (statusCode === 403) console.error('[push] deleted subscription with mismatched VAPID key:', sub.id)
         } else {
           console.error('[push] send failed:', err)
         }

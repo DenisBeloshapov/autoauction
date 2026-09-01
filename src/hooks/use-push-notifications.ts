@@ -63,6 +63,24 @@ export function usePushNotifications(authHeaders: HeadersInit) {
       const { publicKey } = await keyRes.json();
 
       const reg = await navigator.serviceWorker.ready;
+
+      // Tear down any existing browser-level subscription first. If VAPID
+      // keys ever changed server-side after a subscription was created, the
+      // old one is bound to a public key that no longer matches the current
+      // private key — sending to it fails with a 403 ("credentials do not
+      // correspond"). Some browsers also just refuse to create a second
+      // subscription with a different applicationServerKey outright. Always
+      // starting clean avoids both.
+      const existing = await reg.pushManager.getSubscription();
+      if (existing) {
+        await fetch("/api/push/unsubscribe", {
+          method: "POST",
+          headers: authHeaders,
+          body: JSON.stringify({ endpoint: existing.endpoint }),
+        }).catch(() => {});
+        await existing.unsubscribe().catch(() => {});
+      }
+
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(publicKey),
