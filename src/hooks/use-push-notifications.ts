@@ -92,7 +92,7 @@ export function usePushNotifications(authHeaders: HeadersInit) {
   > => {
     let res: Response;
     try {
-      res = await fetch("/api/push/test", { method: "POST", headers: authHeaders });
+      res = await fetch("/api/push/self-test", { method: "POST", headers: authHeaders });
     } catch {
       // fetch() itself threw — this really is a connectivity problem
       // (offline, DNS, CORS), not a server-side one.
@@ -110,7 +110,7 @@ export function usePushNotifications(authHeaders: HeadersInit) {
         reason: `http_${res.status}`,
         message:
           res.status === 404
-            ? "Эндпоинт /api/push/test не найден (404) — похоже, этот раунд правок ещё не задеплоен"
+            ? "Эндпоинт /api/push/self-test не найден (404) — либо этот раунд правок ещё не задеплоен, либо файл не попал в git (проверьте .gitignore) или сборка Vercel"
             : `Сервер ответил не JSON'ом (HTTP ${res.status}) — вероятно, ошибка на сервере`,
       };
     }
