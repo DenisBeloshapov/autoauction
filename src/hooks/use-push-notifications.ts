@@ -90,12 +90,36 @@ export function usePushNotifications(authHeaders: HeadersInit) {
   const testSelf = useCallback(async (): Promise<
     { ok: true } | { ok: false; reason: string; message: string }
   > => {
+    let res: Response;
     try {
-      const res = await fetch("/api/push/test", { method: "POST", headers: authHeaders });
+      res = await fetch("/api/push/test", { method: "POST", headers: authHeaders });
+    } catch {
+      // fetch() itself threw — this really is a connectivity problem
+      // (offline, DNS, CORS), not a server-side one.
+      return { ok: false, reason: "network_error", message: "Нет соединения с сервером (офлайн?)" };
+    }
+
+    const contentType = res.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      // Server responded, but not with JSON — almost always means the route
+      // itself doesn't exist yet (404 HTML page) or crashed before returning
+      // JSON (500 error page). Either way: a deploy/server issue, not "no
+      // connection".
+      return {
+        ok: false,
+        reason: `http_${res.status}`,
+        message:
+          res.status === 404
+            ? "Эндпоинт /api/push/test не найден (404) — похоже, этот раунд правок ещё не задеплоен"
+            : `Сервер ответил не JSON'ом (HTTP ${res.status}) — вероятно, ошибка на сервере`,
+      };
+    }
+
+    try {
       const data = await res.json();
       return data;
     } catch {
-      return { ok: false, reason: "network_error", message: "Не удалось связаться с сервером" };
+      return { ok: false, reason: "bad_json", message: `Сервер ответил некорректным JSON (HTTP ${res.status})` };
     }
   }, [authHeaders]);
 
