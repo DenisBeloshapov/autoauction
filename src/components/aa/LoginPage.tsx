@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { CircleNotch, ArrowRight, User, Lock, Eye, EyeSlash } from "@phosphor-icons/react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -41,11 +42,14 @@ export function LoginPage() {
         <div className="rounded-xl border border-border bg-card p-8 sm:p-10">
           {/* Mark */}
           <div className="flex flex-col items-center mb-9">
-            <div className="w-11 h-11 rounded-md bg-foreground flex items-center justify-center mb-5">
-              <span className="text-background font-bold text-base tracking-tight">
-                AA
-              </span>
-            </div>
+            <Image
+              src="/logo-mark.png"
+              alt="AuctionWorks"
+              width={56}
+              height={56}
+              className="mb-5"
+              priority
+            />
             <h1 className="aa-serif text-2xl font-semibold text-foreground">
               AuctionWorks
             </h1>

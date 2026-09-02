@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
-import { SignOut, Globe, Plus, Gear } from "@phosphor-icons/react";
+import { SignOut, Plus, Gear } from "@phosphor-icons/react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { LanguageToggle } from "@/components/aa/LanguageToggle";
@@ -35,9 +36,7 @@ export function AppShell({ tabs, activeTab, onTabChange, children, fab }: AppShe
   const Sidebar = (
     <aside className="hidden md:flex md:w-[260px] md:flex-col md:fixed md:inset-y-0 md:left-0 border-r border-border bg-background/70 backdrop-blur-xl px-5 py-6 z-30">
       <div className="flex items-center gap-3 mb-8">
-        <div className="w-11 h-11 rounded-lg bg-foreground flex items-center justify-center flex-shrink-0">
-          <Globe className="w-5 h-5 text-background" weight="bold" />
-        </div>
+        <Image src="/logo-mark.png" alt="AuctionWorks" width={44} height={44} className="flex-shrink-0" priority />
         <div className="min-w-0">
           <div className="text-base font-bold text-foreground truncate">AuctionWorks</div>
           <div className="text-[11px] text-muted-foreground truncate">
@@ -103,9 +102,7 @@ export function AppShell({ tabs, activeTab, onTabChange, children, fab }: AppShe
     <header className="md:hidden sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border">
       <div className="px-4 py-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-9 h-9 rounded-md bg-foreground flex items-center justify-center flex-shrink-0">
-            <Globe className="w-4 h-4 text-background" weight="bold" />
-          </div>
+          <Image src="/logo-mark.png" alt="AuctionWorks" width={36} height={36} className="flex-shrink-0" priority />
           <div className="min-w-0">
             <div className="text-sm font-bold truncate leading-tight">AuctionWorks</div>
             <div className="text-[10px] text-muted-foreground truncate leading-tight">
