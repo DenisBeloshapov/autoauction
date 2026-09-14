@@ -14,7 +14,6 @@ import {
   Check,
   User,
   MapPin,
-  Hash,
   FileText,
   Calendar,
   Boat,
@@ -54,6 +53,7 @@ type WonLot = {
   id: string;
   price: number | null;
   currency: string;
+  bodyNumber: string | null;
   vesselName: string | null;
   loadingDate: string | null;
   status: string;
@@ -425,7 +425,7 @@ export function ClientPanel() {
                           <FileText className="w-3 h-3" />
                           {t("delivery.lotInfo")}
                         </div>
-                        <InfoRow icon={<Hash className="w-3.5 h-3.5" />} label={t("delivery.lotNumber")} value={`#${wl.lot.lotNumber}`} mono />
+                        <InfoRow icon={<FileText className="w-3.5 h-3.5" />} label={t("wonLots.bodyNumber")} value={wl.bodyNumber || "—"} />
                         <InfoRow icon={<Coins className="w-3.5 h-3.5" />} label={t("delivery.price")} value={wl.price != null ? `${wl.price.toLocaleString()} ${t("wonLots.currency")}` : "—"} mono />
                         {(wl.vesselName || wl.loadingDate) && (
                           <>

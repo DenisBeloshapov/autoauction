@@ -189,7 +189,7 @@ const translations: Record<Language, Record<string, string>> = {
     // WonLot statuses
     "wonStatus.WON": "Выигран",
     "wonStatus.awaitingMethod": "Ожидает данные",
-    "wonStatus.DELIVERY_REQUESTED": "Запрос доставки",
+    "wonStatus.DELIVERY_REQUESTED": "Ожидает погрузки",
     "wonStatus.DELIVERY_CONFIRMED": "На контракте",
     "wonStatus.COMPLETED": "Завершён",
 
@@ -398,7 +398,7 @@ const translations: Record<Language, Record<string, string>> = {
     // WonLot statuses
     "wonStatus.WON": "Won",
     "wonStatus.awaitingMethod": "Awaiting data",
-    "wonStatus.DELIVERY_REQUESTED": "Delivery requested",
+    "wonStatus.DELIVERY_REQUESTED": "Awaiting loading",
     "wonStatus.DELIVERY_CONFIRMED": "On contract",
     "wonStatus.COMPLETED": "Completed",
 
