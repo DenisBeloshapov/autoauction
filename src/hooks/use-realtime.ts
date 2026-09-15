@@ -15,7 +15,9 @@ export function useRealtime(
   callback: (data: unknown) => void
 ) {
   const callbackRef = useRef(callback);
-  callbackRef.current = callback;
+  useEffect(() => {
+    callbackRef.current = callback;
+  });
 
   useEffect(() => {
     let socket: { on: (event: string, cb: (data: unknown) => void) => void; disconnect: () => void } | null = null;

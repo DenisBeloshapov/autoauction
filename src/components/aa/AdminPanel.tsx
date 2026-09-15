@@ -26,6 +26,8 @@ import {
   Coins,
   Cube,
   MagnifyingGlass,
+  PencilSimple,
+  ArrowCounterClockwise,
 } from "@phosphor-icons/react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useConfirm } from "./ConfirmDialog";
@@ -63,6 +65,7 @@ type WonLot = {
     id: string;
     lotNumber: string;
     rawText: string | null;
+    deletionRequested: boolean;
     client: { id: string; name: string | null; username: string };
   };
   deliveryReqs: {
@@ -293,6 +296,20 @@ export function AdminPanel() {
 
   const copyToClipboard = async (text: string) => { try { await navigator.clipboard.writeText(text); toast.success(t("email.copy") + " ✓"); } catch { toast.error(t("common.error")); } };
 
+  const unmarkDeletion = async (id: string) => {
+    const snapshot = lots;
+    setLots((prev) => prev.map((l) => (l.id === id ? { ...l, deletionRequested: false } : l)));
+    const res = await fetch("/api/lots", {
+      method: "PATCH",
+      headers: authHeaders,
+      body: JSON.stringify({ lotId: id, deletionRequested: false }),
+    });
+    if (!res.ok) {
+      setLots(snapshot);
+      toast.error(t("common.error"));
+    }
+  };
+
   const deleteLot = async (id: string) => {
     if (!(await confirm(t("lots.deleteConfirm"), { danger: true, confirmLabel: t("common.delete") }))) return;
     const snapshot = lots;
@@ -404,7 +421,7 @@ export function AdminPanel() {
           {lots.length === 0 ? (
             <EmptyState icon={<Tray className="w-10 h-10 text-muted-foreground" />} text={t("lots.noLots")} />
           ) : (
-            <AdminLotsGrouped lots={lots} t={t} selectedIds={selectedIds} onToggleSelect={toggleSelect} onToggleSelectAll={toggleSelectAll} onDelete={deleteLot} />
+            <AdminLotsGrouped lots={lots} t={t} selectedIds={selectedIds} onToggleSelect={toggleSelect} onToggleSelectAll={toggleSelectAll} onDelete={deleteLot} onUnmark={unmarkDeletion} />
           )}
         </div>
       )}
@@ -691,9 +708,9 @@ function EmptyState({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (<div className="aa-card p-12 flex flex-col items-center justify-center text-center">{icon}<p className="text-sm text-muted-foreground mt-3">{text}</p></div>);
 }
 
-function AdminLotsGrouped({ lots, t, selectedIds, onToggleSelect, onToggleSelectAll, onDelete }: {
+function AdminLotsGrouped({ lots, t, selectedIds, onToggleSelect, onToggleSelectAll, onDelete, onUnmark }: {
   lots: Lot[]; t: (k: string) => string; selectedIds: Set<string>;
-  onToggleSelect: (id: string) => void; onToggleSelectAll: () => void; onDelete: (id: string) => void | Promise<void>;
+  onToggleSelect: (id: string) => void; onToggleSelectAll: () => void; onDelete: (id: string) => void | Promise<void>; onUnmark: (id: string) => void | Promise<void>;
 }) {
   type Group = { key: string; comment: string | null; clientName: string; lots: Lot[] };
   const groups: Group[] = (() => {
@@ -760,7 +777,12 @@ function AdminLotsGrouped({ lots, t, selectedIds, onToggleSelect, onToggleSelect
                       </div>
                     </div>
                   </div>
-                  <button onClick={() => onDelete(lot.id)} className="text-xs text-destructive hover:underline flex items-center gap-1 transition flex-shrink-0 mt-1"><Trash className="w-3 h-3" /></button>
+                  <div className="flex items-center gap-2 flex-shrink-0 mt-1">
+                    {lot.deletionRequested && (
+                      <button onClick={() => onUnmark(lot.id)} title={t("lots.clearDeletionMark")} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition"><ArrowCounterClockwise className="w-3 h-3" /></button>
+                    )}
+                    <button onClick={() => onDelete(lot.id)} className="text-xs text-destructive hover:underline flex items-center gap-1 transition"><Trash className="w-3 h-3" /></button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -811,6 +833,20 @@ function AdminDelivery({ wonLots, setWonLots, authHeaders, onRefresh, t }: { won
     }
   };
 
+  const toggleDeletionMark = async (lotId: string, mark: boolean) => {
+    const snapshot = wonLots;
+    setWonLots((prev) => prev.map((w) => (w.lot.id === lotId ? { ...w, lot: { ...w.lot, deletionRequested: mark } } : w)));
+    const res = await fetch("/api/lots", {
+      method: "PATCH",
+      headers: authHeaders,
+      body: JSON.stringify({ lotId, deletionRequested: mark }),
+    });
+    if (!res.ok) {
+      setWonLots(snapshot);
+      toast.error(t("common.error"));
+    }
+  };
+
   const advanceStatus = async (wonLotId: string, nextStatus: string) => {
     const snapshot = wonLots;
     setUpdatingId(wonLotId);
@@ -828,35 +864,81 @@ function AdminDelivery({ wonLots, setWonLots, authHeaders, onRefresh, t }: { won
   };
 
   const [contractWonLot, setContractWonLot] = useState<WonLot | null>(null);
+  const [contractBatchIds, setContractBatchIds] = useState<string[] | null>(null);
+  const [contractEditOnly, setContractEditOnly] = useState(false);
   const [vesselName, setVesselName] = useState("");
   const [loadingDate, setLoadingDate] = useState("");
   const [savingContract, setSavingContract] = useState(false);
+  const [selectedForContract, setSelectedForContract] = useState<Set<string>>(new Set());
+
+  const toggleContractSelect = (id: string) => {
+    setSelectedForContract((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const openBatchContract = () => {
+    if (selectedForContract.size === 0) return;
+    setContractBatchIds(Array.from(selectedForContract));
+    setContractWonLot(null);
+    setContractEditOnly(false);
+    setVesselName("");
+    setLoadingDate("");
+  };
+
+  const openEditContract = (wl: WonLot) => {
+    setContractWonLot(wl);
+    setContractBatchIds(null);
+    setContractEditOnly(true);
+    setVesselName(wl.vesselName || "");
+    setLoadingDate(wl.loadingDate || "");
+  };
+
+  const closeContractModal = () => {
+    setContractWonLot(null);
+    setContractBatchIds(null);
+    setContractEditOnly(false);
+  };
 
   const submitContract = async () => {
-    if (!contractWonLot) return;
+    const targetIds = contractBatchIds || (contractWonLot ? [contractWonLot.id] : []);
+    if (targetIds.length === 0) return;
     setSavingContract(true);
+    const payload: Record<string, unknown> = {
+      wonLotIds: targetIds,
+      vesselName: vesselName.trim() || null,
+      loadingDate: loadingDate || null,
+    };
+    // Editing an already-confirmed lot's vessel/date shouldn't touch status —
+    // only a first-time confirm (from DELIVERY_REQUESTED) advances it.
+    if (!contractEditOnly) payload.status = "DELIVERY_CONFIRMED";
+
     const res = await fetch("/api/delivery", {
       method: "PATCH",
       headers: authHeaders,
-      body: JSON.stringify({
-        wonLotId: contractWonLot.id,
-        status: "DELIVERY_CONFIRMED",
-        vesselName: vesselName.trim() || null,
-        loadingDate: loadingDate || null,
-      }),
+      body: JSON.stringify(payload),
     });
     setSavingContract(false);
     if (res.ok) {
+      const idSet = new Set(targetIds);
       setWonLots((prev) =>
         prev.map((w) =>
-          w.id === contractWonLot.id
-            ? { ...w, status: "DELIVERY_CONFIRMED", vesselName: vesselName.trim() || null, loadingDate: loadingDate || null }
+          idSet.has(w.id)
+            ? {
+                ...w,
+                status: contractEditOnly ? w.status : "DELIVERY_CONFIRMED",
+                vesselName: vesselName.trim() || null,
+                loadingDate: loadingDate || null,
+              }
             : w
         )
       );
-      setContractWonLot(null);
+      setSelectedForContract(new Set());
       setVesselName("");
       setLoadingDate("");
+      closeContractModal();
       toast.success(t("common.success"));
     } else {
       toast.error(t("common.error"));
@@ -873,6 +955,15 @@ function AdminDelivery({ wonLots, setWonLots, authHeaders, onRefresh, t }: { won
         </div>
         {searchQuery && <p className="text-xs text-muted-foreground mt-2">{t("delivery.found")}: <span className="aa-mono font-bold text-primary">{filtered.length}</span> / {wonLots.length}</p>}
       </div>
+      {selectedForContract.size > 0 && (
+        <div className="mb-4 flex items-center justify-between gap-3 p-3 rounded-md border border-primary/30 bg-accent/40">
+          <span className="text-sm font-semibold">{t("delivery.selectedCount").replace("{n}", String(selectedForContract.size))}</span>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setSelectedForContract(new Set())} className="h-8 px-3 rounded-md border border-border hover:bg-muted text-xs font-medium transition">{t("common.cancel")}</button>
+            <button onClick={openBatchContract} className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors">{t("delivery.confirmBatch")}</button>
+          </div>
+        </div>
+      )}
       {wonLots.length === 0 ? (
         <EmptyState icon={<Truck className="w-10 h-10 text-muted-foreground" />} text={t("wonLots.noWonLots")} />
       ) : filtered.length === 0 ? (
@@ -891,6 +982,24 @@ function AdminDelivery({ wonLots, setWonLots, authHeaders, onRefresh, t }: { won
                     <div className="min-w-0"><div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">{t("delivery.lotNumber")}</div><div className="text-xl font-extrabold aa-mono text-primary mt-0.5 truncate">#{wl.lot.lotNumber}</div></div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
+                    {wl.status === "DELIVERY_REQUESTED" && (
+                      <input
+                        type="checkbox"
+                        checked={selectedForContract.has(wl.id)}
+                        onChange={() => toggleContractSelect(wl.id)}
+                        className="w-4 h-4 rounded accent-foreground cursor-pointer"
+                        title={t("delivery.selectForBatch")}
+                      />
+                    )}
+                    {wl.lot.deletionRequested && (
+                      <button
+                        onClick={() => toggleDeletionMark(wl.lot.id, false)}
+                        title={t("lots.clearDeletionMark")}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-destructive/10 text-destructive text-[10px] font-bold uppercase tracking-wide hover:bg-destructive/20 transition"
+                      >
+                        <ArrowCounterClockwise className="w-3 h-3" weight="bold" /> {t("lots.markedForDeletionLabel")}
+                      </button>
+                    )}
                     {awaitingMethod ? (
                       <StatusBadge status="AWAITING" label={t("wonStatus.awaitingMethod")} pulse />
                     ) : wl.status === "DELIVERY_REQUESTED" ? null : (
@@ -898,10 +1007,19 @@ function AdminDelivery({ wonLots, setWonLots, authHeaders, onRefresh, t }: { won
                     )}
                     {wl.status === "DELIVERY_REQUESTED" && (
                       <button
-                        onClick={() => { setContractWonLot(wl); setVesselName(wl.vesselName || ""); setLoadingDate(wl.loadingDate || ""); }}
+                        onClick={() => { setContractWonLot(wl); setContractBatchIds(null); setContractEditOnly(false); setVesselName(wl.vesselName || ""); setLoadingDate(wl.loadingDate || ""); }}
                         className="h-8 px-3 rounded-md bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors flex items-center gap-1.5"
                       >
                         {t("delivery.confirm")}
+                      </button>
+                    )}
+                    {(wl.status === "DELIVERY_CONFIRMED" || wl.status === "COMPLETED") && (
+                      <button
+                        onClick={() => openEditContract(wl)}
+                        title={t("delivery.editContract")}
+                        className="h-8 w-8 rounded-md border border-border hover:bg-muted flex items-center justify-center transition"
+                      >
+                        <PencilSimple className="w-3.5 h-3.5" />
                       </button>
                     )}
                     {wl.status === "DELIVERY_CONFIRMED" && (
@@ -976,13 +1094,13 @@ function AdminDelivery({ wonLots, setWonLots, authHeaders, onRefresh, t }: { won
       )}
 
       <Modal
-        open={!!contractWonLot}
-        onClose={() => setContractWonLot(null)}
-        title={t("delivery.contractModalTitle")}
+        open={!!contractWonLot || !!contractBatchIds}
+        onClose={closeContractModal}
+        title={contractEditOnly ? t("delivery.editContractTitle") : t("delivery.contractModalTitle")}
         size="sm"
         footer={
           <>
-            <button onClick={() => setContractWonLot(null)} className="h-10 px-4 rounded-md border border-border hover:bg-muted text-sm font-medium transition">
+            <button onClick={closeContractModal} className="h-10 px-4 rounded-md border border-border hover:bg-muted text-sm font-medium transition">
               {t("common.cancel")}
             </button>
             <button onClick={submitContract} disabled={savingContract} className="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center gap-1.5">
@@ -996,6 +1114,11 @@ function AdminDelivery({ wonLots, setWonLots, authHeaders, onRefresh, t }: { won
           {contractWonLot && (
             <p className="text-xs text-muted-foreground">
               {t("delivery.lotNumber")}: <span className="aa-mono font-semibold text-foreground">#{contractWonLot.lot.lotNumber}</span>
+            </p>
+          )}
+          {contractBatchIds && (
+            <p className="text-xs text-muted-foreground">
+              {t("delivery.selectedCount").replace("{n}", String(contractBatchIds.length))}
             </p>
           )}
           <div className="space-y-1.5">

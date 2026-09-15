@@ -61,6 +61,7 @@ type WonLot = {
     id: string;
     lotNumber: string;
     rawText: string | null;
+    deletionRequested: boolean;
     client: { id: string; name: string | null; username: string };
   };
   deliveryReqs: {
@@ -393,7 +394,7 @@ export function ClientPanel() {
                   <motion.div
                     key={wl.id}
                     variants={itemVariants}
-                    className="aa-card aa-card-hover overflow-hidden"
+                    className={`aa-card aa-card-hover overflow-hidden ${wl.lot.deletionRequested ? "!border-destructive/60" : ""}`}
                   >
                     {/* Header */}
                     <div className="flex items-start justify-between p-5 pb-4 gap-3">
@@ -410,11 +411,18 @@ export function ClientPanel() {
                           </div>
                         </div>
                       </div>
-                      {awaitingMethod ? (
-                        <StatusBadge status="AWAITING" label={t("wonStatus.awaitingMethod")} pulse />
-                      ) : wl.status === "DELIVERY_REQUESTED" ? null : (
-                        <StatusBadge status={wl.status} label={t(`wonStatus.${wl.status}`)} />
-                      )}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {wl.lot.deletionRequested && (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-destructive/10 text-destructive text-[10px] font-bold uppercase tracking-wide">
+                            <Trash className="w-3 h-3" /> {t("lots.markedForDeletionLabel")}
+                          </span>
+                        )}
+                        {awaitingMethod ? (
+                          <StatusBadge status="AWAITING" label={t("wonStatus.awaitingMethod")} pulse />
+                        ) : wl.status === "DELIVERY_REQUESTED" ? null : (
+                          <StatusBadge status={wl.status} label={t(`wonStatus.${wl.status}`)} />
+                        )}
+                      </div>
                     </div>
 
                     {/* Body */}
@@ -820,14 +828,14 @@ function MyLotsGrouped({
                       <span className="text-xs text-destructive font-medium flex items-center gap-1">
                         <Trash className="w-3 h-3" /> {t("lots.markedForDeletionLabel")}
                       </span>
-                    ) : (
+                    ) : lot.status !== "WON" ? (
                       <button
                         onClick={() => onDelete(lot.id)}
                         className="text-xs text-destructive hover:underline flex items-center gap-1 transition"
                       >
                         <Trash className="w-3 h-3" /> {t("lots.markForDeletion")}
                       </button>
-                    )}
+                    ) : null}
                   </div>
                 </motion.div>
               ))}

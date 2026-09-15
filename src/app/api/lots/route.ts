@@ -156,6 +156,13 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
+    // A lot that already won is a real commitment, not a pending request —
+    // clients can no longer mark it for deletion once it's WON. Admin can
+    // still toggle the flag either way (e.g. to clear a stale mark).
+    if (user.role === 'CLIENT' && body.deletionRequested === true && lot.status === 'WON') {
+      return NextResponse.json({ error: 'Cannot mark a won lot for deletion' }, { status: 400 })
+    }
+
     const updated = await db.lot.update({
       where: { id: lotId },
       data: { deletionRequested: body.deletionRequested },

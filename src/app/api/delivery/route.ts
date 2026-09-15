@@ -38,9 +38,14 @@ export async function PATCH(req: Request) {
 
   try {
     const body = await req.json()
-    const wonLotId = String(body.wonLotId || '')
-    if (!wonLotId) {
-      return NextResponse.json({ error: 'wonLotId is required' }, { status: 400 })
+    const wonLotIds: string[] = Array.isArray(body.wonLotIds)
+      ? body.wonLotIds.map(String)
+      : body.wonLotId
+        ? [String(body.wonLotId)]
+        : []
+
+    if (wonLotIds.length === 0) {
+      return NextResponse.json({ error: 'wonLotId or wonLotIds is required' }, { status: 400 })
     }
 
     const data: { status?: string; bodyNumber?: string | null; vesselName?: string | null; loadingDate?: string | null } = {}
@@ -64,30 +69,54 @@ export async function PATCH(req: Request) {
       data.loadingDate = body.loadingDate ? String(body.loadingDate) : null
     }
 
+    // bodyNumber edits only ever target one won lot at a time from the UI —
+    // guard against accidentally stamping the same value onto a whole batch.
+    if (body.bodyNumber !== undefined && wonLotIds.length > 1) {
+      return NextResponse.json({ error: 'bodyNumber can only be updated for one lot at a time' }, { status: 400 })
+    }
+
     if (Object.keys(data).length === 0) {
       return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
     }
 
-    const wonLot = await db.wonLot.update({
-      where: { id: wonLotId },
-      data,
-      include: { lot: { select: { clientId: true, lotNumber: true } } },
-    })
+    const wonLots = await Promise.all(
+      wonLotIds.map((wonLotId) =>
+        db.wonLot.update({
+          where: { id: wonLotId },
+          data,
+          include: { lot: { select: { clientId: true, lotNumber: true } } },
+        })
+      )
+    )
 
-    // Notify the client once a contract is confirmed with vessel/loading info
+    // Notify each affected client once a contract is confirmed with
+    // vessel/loading info — grouped per client, not one push per lot, in
+    // case a batch confirm covers several lots for the same client.
     if (data.status === 'DELIVERY_CONFIRMED' && (data.vesselName || data.loadingDate)) {
       const { sendPushToUser } = await import('@/lib/push')
+      const byClient = new Map<string, string[]>()
+      for (const wl of wonLots) {
+        if (!byClient.has(wl.lot.clientId)) byClient.set(wl.lot.clientId, [])
+        byClient.get(wl.lot.clientId)!.push(wl.lot.lotNumber)
+      }
       const parts: string[] = []
       if (data.vesselName) parts.push(`судно ${data.vesselName}`)
       if (data.loadingDate) parts.push(`погрузка ${data.loadingDate}`)
-      await sendPushToUser(wonLot.lot.clientId, {
-        title: 'На контракте',
-        body: `Лот #${wonLot.lot.lotNumber} — ${parts.join(', ')}`,
-        url: '/',
-      })
+      await Promise.all(
+        Array.from(byClient.entries()).map(([clientId, lotNumbers]) =>
+          sendPushToUser(clientId, {
+            title: 'На контракте',
+            body:
+              lotNumbers.length === 1
+                ? `Лот #${lotNumbers[0]} — ${parts.join(', ')}`
+                : `Лоты #${lotNumbers.join(', #')} — ${parts.join(', ')}`,
+            url: '/',
+          })
+        )
+      )
     }
 
-    return NextResponse.json({ wonLot })
+    return NextResponse.json({ wonLots })
   } catch (e) {
     console.error('[delivery] PATCH FATAL:', e)
     const message = e instanceof Error ? e.message : String(e)

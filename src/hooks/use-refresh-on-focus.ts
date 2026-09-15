@@ -16,7 +16,9 @@ import { useEffect, useRef } from "react";
  */
 export function useRefreshOnFocus(callback: () => void, minIntervalMs = 8000) {
   const callbackRef = useRef(callback);
-  callbackRef.current = callback;
+  useEffect(() => {
+    callbackRef.current = callback;
+  });
   const lastRunRef = useRef(0);
 
   useEffect(() => {
